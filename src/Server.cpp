@@ -29,18 +29,23 @@ void Server::initAndListen() {
 	logSuccess("Listening at http://" + std::string(inet_ntoa(_socketInfo.sin_addr)) + ":" + std::to_string(ntohs(_socketInfo.sin_port)));
 }
 
+void Server::updateEvent(int ident, short filter, u_short flags, u_int fflags, int data, void *udata) {
+	struct kevent kev;
+	EV_SET(&kev, ident, filter, flags, fflags, data, udata);
+	if (kevent(_kq, &kev, 1, NULL, 0, NULL) == -1)
+		exitWithError("Failed to update kevent");
+}
+
 void Server::runLoop()
 {
-    struct kevent evSet;
     struct kevent evList[MAX_EVENTS];
-	int kq = kqueue();
+	_kq = kqueue();
 
-    EV_SET(&evSet, _listeningSocket, EVFILT_READ, EV_ADD, 0, 0, NULL);
-    kevent(kq, &evSet, 1, NULL, 0, NULL);
+    updateEvent(_listeningSocket, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
 	while (true) {
 		logInfo("Waiting for new events...");
-		int newEvents = kevent(kq, NULL, 0, evList, MAX_EVENTS, NULL);
+		int newEvents = kevent(_kq, NULL, 0, evList, MAX_EVENTS, NULL);
 		if (newEvents == -1)
 			exitWithError("Error checking for new events");
 		for (int i = 0; i < newEvents; i++) {
@@ -50,15 +55,13 @@ void Server::runLoop()
 				if (fd == -1)
 					exitWithError("Error accepting new connection");
 				else {
-					EV_SET(&evSet, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-					if (kevent(kq, &evSet, 1, NULL, 0, NULL) == -1)
-						exitWithError("Failed to register kevent");
+					// fcntl(fd, F_SETFL, O_NONBLOCK);
+					updateEvent(fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
 				}
 			}
 			else if (evList[i].flags & EV_EOF) {
 				logInfo("Client has disconnected");
-				EV_SET(&evSet, eventSocket, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-                kevent(kq, &evSet, 1, NULL, 0, NULL);
+				updateEvent(eventSocket, EVFILT_READ, EV_DELETE, 0, 0, NULL);
 			}
 			else if (evList[i].filter == EVFILT_READ) {
 				std::string request = receiveMessage(eventSocket);

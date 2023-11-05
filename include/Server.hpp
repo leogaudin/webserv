@@ -30,19 +30,18 @@ class Server
 	void runLoop();
 
   private:
-	// t_client clients[MAX_CONNECTIONS];
 	std::string _ipAddress;
 	int _port;
 	int _listeningSocket;
 	struct sockaddr_in _socketInfo;
 	unsigned int _socketInfoSize;
+	int _kq;
 
+	void initAndListen();
+	std::string receiveMessage(int socket);
 	std::string buildResponse(std::string str);
 	void sendResponse(std::string str, int socket);
-	void initAndListen();
-	int addClient(int fd);
-	int removeClient(int fd);
-	std::string receiveMessage(int socket);
+	void updateEvent(int ident, short filter, u_short flags, u_int fflags, int data, void *udata);
 };
 
 void	log(const std::string &message);
