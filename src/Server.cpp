@@ -57,11 +57,18 @@ void Server::runLoop()
 			else if (evList[i].flags & EV_EOF) {
 				logInfo("Client has disconnected");
 				updateEvent(eventSocket, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+				updateEvent(eventSocket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 			}
 			else if (evList[i].filter == EVFILT_READ) {
 				std::string request = receiveMessage(eventSocket);
-				logSuccess("Received the following request from client:\n" + request);
-				sendResponse(buildResponse(request), eventSocket);
+				updateEvent(evList[i].ident, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
+				updateEvent(evList[i].ident, EVFILT_WRITE, EV_ENABLE, 0, 0, NULL);
+			}
+			else if (evList[i].filter == EVFILT_WRITE) {
+				std::string response = buildResponse("Hello World!");
+				sendResponse(response, eventSocket);
+				updateEvent(evList[i].ident, EVFILT_READ, EV_ENABLE, 0, 0, NULL);
+				updateEvent(evList[i].ident, EVFILT_WRITE, EV_DISABLE, 0, 0, NULL);
 				close(eventSocket);
 			}
 		}
@@ -76,7 +83,10 @@ void Server::acceptConnection() {
 	if (clientSocket == -1)
 		exitWithError("Error accepting new connection");
 	else {
-		updateEvent(clientSocket, EVFILT_READ, EV_ADD, 0, 0, NULL);
+		logInfo("New client connected: " + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)));
+		fcntl(clientSocket, F_SETFL, O_NONBLOCK);
+		updateEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+		updateEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, NULL);
 	}
 }
 
