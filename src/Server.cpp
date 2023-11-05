@@ -1,8 +1,6 @@
 #include "../include/Server.hpp"
 
-Server::Server(std::string ip_address, int port)
-	: _ipAddress(ip_address), _port(port), _listeningSocket(),
-		_socketInfo(), _socketInfoSize(sizeof(_socketInfo))
+Server::Server(std::string ip_address, int port): _ipAddress(ip_address), _port(port), _listeningSocket()
 {
 	initAndListen();
 }
@@ -14,19 +12,22 @@ Server::~Server()
 }
 
 void Server::initAndListen() {
-	memset(&_socketInfo, 0, sizeof(_socketInfo));
-	_socketInfo.sin_family = AF_INET;
-	_socketInfo.sin_port = htons(_port);
-	_socketInfo.sin_addr.s_addr = inet_addr(_ipAddress.c_str());
+	sockaddr_in socketInfo;
+	socklen_t socketInfoSize = sizeof(socketInfo);
+
+	memset(&socketInfo, 0, sizeof(socketInfo));
+	socketInfo.sin_family = AF_INET;
+	socketInfo.sin_port = htons(_port);
+	socketInfo.sin_addr.s_addr = inet_addr(_ipAddress.c_str());
 
 	_listeningSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listeningSocket < 0)
 		exitWithError("Creating socket");
-	if (bind(_listeningSocket, (sockaddr *)&_socketInfo, _socketInfoSize) < 0 && errno == EADDRINUSE)
+	if (bind(_listeningSocket, (sockaddr *)&socketInfo, socketInfoSize) < 0 && errno == EADDRINUSE)
 		exitWithError("Address already in use");
 	if (listen(_listeningSocket, MAX_CONNECTIONS) < 0)
 		exitWithError("Socket listening");
-	logSuccess("Listening at http://" + std::string(inet_ntoa(_socketInfo.sin_addr)) + ":" + std::to_string(ntohs(_socketInfo.sin_port)));
+	logSuccess("Listening at http://" + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)));
 }
 
 void Server::updateEvent(int ident, short filter, u_short flags, u_int fflags, int data, void *udata) {
@@ -46,18 +47,12 @@ void Server::runLoop()
 	while (true) {
 		logInfo("Waiting for new events...");
 		int newEvents = kevent(_kq, NULL, 0, evList, MAX_EVENTS, NULL);
-		if (newEvents == -1)
-			exitWithError("Error checking for new events");
+		if (newEvents <= 0)
+			continue;
 		for (int i = 0; i < newEvents; i++) {
 			int eventSocket = evList[i].ident;
 			if (eventSocket == _listeningSocket) {
-				int fd = accept(_listeningSocket, (sockaddr *)&_socketInfo, &_socketInfoSize);
-				if (fd == -1)
-					exitWithError("Error accepting new connection");
-				else {
-					// fcntl(fd, F_SETFL, O_NONBLOCK);
-					updateEvent(fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-				}
+				acceptConnection();
 			}
 			else if (evList[i].flags & EV_EOF) {
 				logInfo("Client has disconnected");
@@ -70,6 +65,18 @@ void Server::runLoop()
 				close(eventSocket);
 			}
 		}
+	}
+}
+
+void Server::acceptConnection() {
+	sockaddr_in socketInfo;
+	socklen_t socketInfoSize = sizeof(socketInfo);
+
+	int clientSocket = accept(_listeningSocket, (sockaddr *)&socketInfo, &socketInfoSize);
+	if (clientSocket == -1)
+		exitWithError("Error accepting new connection");
+	else {
+		updateEvent(clientSocket, EVFILT_READ, EV_ADD, 0, 0, NULL);
 	}
 }
 
