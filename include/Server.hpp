@@ -17,11 +17,6 @@
 # define BUFFER_SIZE 1024
 # define MAX_EVENTS 16
 
-typedef struct s_client
-{
-	int fd;
-} t_client;
-
 class Server
 {
   public:

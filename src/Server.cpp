@@ -1,16 +1,28 @@
 #include "../include/Server.hpp"
 
+/**
+ * @brief Constructor for the Server class
+ *
+ * @param ip_address	The IP address to listen on
+ * @param port			The port to listen on
+ */
 Server::Server(std::string ip_address, int port): _ipAddress(ip_address), _port(port), _listeningSocket()
 {
 	initAndListen();
 }
 
+/**
+* @brief Closes the listening socket and exits the program
+*/
 Server::~Server()
 {
 	close(_listeningSocket);
 	exit(EXIT_SUCCESS);
 }
 
+/**
+ * @brief Initialises the server and starts listening for connections
+ */
 void Server::initAndListen() {
 	sockaddr_in socketInfo;
 	socklen_t socketInfoSize = sizeof(socketInfo);
@@ -30,6 +42,9 @@ void Server::initAndListen() {
 	logSuccess("Listening at http://" + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)));
 }
 
+/**
+ * @brief Utility function to update a kevent
+ */
 void Server::updateEvent(int ident, short filter, u_short flags, u_int fflags, int data, void *udata) {
 	struct kevent kev;
 	EV_SET(&kev, ident, filter, flags, fflags, data, udata);
@@ -37,6 +52,10 @@ void Server::updateEvent(int ident, short filter, u_short flags, u_int fflags, i
 		exitWithError("Failed to update kevent");
 }
 
+/**
+ * @brief The main event loop. Waits for new events and handles them
+ * in a non-blocking way.
+ */
 void Server::runLoop()
 {
     struct kevent evList[MAX_EVENTS];
@@ -75,6 +94,9 @@ void Server::runLoop()
 	}
 }
 
+/**
+ * @brief Accepts a new connection and adds it to the kqueue
+ */
 void Server::acceptConnection() {
 	sockaddr_in socketInfo;
 	socklen_t socketInfoSize = sizeof(socketInfo);
@@ -90,6 +112,12 @@ void Server::acceptConnection() {
 	}
 }
 
+/**
+ * @brief Receives a message from a client socket
+ *
+ * @param socket	The client socket to receive from
+ * @return 			The received message
+ */
 std::string Server::receiveMessage(int socket) {
 	char buffer[BUFFER_SIZE];
 	int bytesReceived = read(socket, buffer, BUFFER_SIZE);
@@ -99,6 +127,12 @@ std::string Server::receiveMessage(int socket) {
 	return (std::string(buffer));
 }
 
+/**
+ * @brief Builds a response to send to the client
+ *
+ * @param str	The message to send
+ * @return 		The response to send
+ */
 std::string Server::buildResponse(std::string str)
 {
 	std::string htmlFile = "<!DOCTYPE html><html lang=\"en\"><body><h1> HOME </h1><p>" + str + "</p></body></html>";
@@ -108,6 +142,12 @@ std::string Server::buildResponse(std::string str)
 	return (ss.str());
 }
 
+/**
+ * @brief Sends a response to a client socket
+ *
+ * @param str		The response to send
+ * @param socket	The client socket to send to
+ */
 void Server::sendResponse(std::string str, int socket)
 {
 	long	bytesSent = write(socket, str.c_str(), str.size());
@@ -116,17 +156,3 @@ void Server::sendResponse(std::string str, int socket)
 	else
 		logError("Error sending response to client");
 }
-
-// void setAsNonBlocking(int socket)
-// {
-// 	int existingFlags = fcntl(socket, F_GETFL, 0);
-// 	if (existingFlags == -1)
-// 	{
-// 		exitWithError("Failed to set socket as non-blocking");
-// 	}
-// 	int s = fcntl(socket, F_SETFL, existingFlags | O_NONBLOCK);
-// 	if (s == -1)
-// 	{
-// 		exitWithError("Failed to set socket as non-blocking");
-// 	}
-// }
