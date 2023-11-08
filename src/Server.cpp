@@ -92,7 +92,7 @@ void Server::runLoop()
 				updateEvent(eventSocket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 			}
 			else if (evList[i].filter == EVFILT_READ) {
-				std::string request = receiveMessage(eventSocket);
+				std::string request = receiveRequest(eventSocket);
 				updateEvent(evList[i].ident, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
 				updateEvent(evList[i].ident, EVFILT_WRITE, EV_ENABLE, 0, 0, NULL);
 			}
@@ -131,15 +131,23 @@ void Server::acceptConnection() {
  * @param socket	The client socket to receive from
  * @return 			The received message
  */
-std::string Server::receiveMessage(int socket) {
+std::string Server::receiveRequest(int socket) {
+	std::string stash;
 	char buffer[BUFFER_SIZE];
-	int bytesReceived = read(socket, buffer, BUFFER_SIZE);
-	if (bytesReceived < 0)
-		exitWithError("Failed to read bytes from client socket connection");
-	buffer[bytesReceived] = '\0';
-	// logInfo("Received message from client: \n" + std::string(buffer));
-	Request request = Request(std::string(buffer));
-	return (std::string(buffer));
+	int bytesReceived = 0;
+	while (true) {
+		bytesReceived = read(socket, buffer, BUFFER_SIZE);
+		if (bytesReceived < 0) {
+			logError("Failed to read request from client");
+			close(socket);
+		}
+		stash.append(buffer, bytesReceived);
+		if (bytesReceived < BUFFER_SIZE) {
+			break;
+		}
+	}
+	Request request = Request(stash);
+	return stash;
 }
 
 /**

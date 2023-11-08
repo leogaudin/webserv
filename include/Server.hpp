@@ -15,7 +15,7 @@
 # include <unistd.h>
 
 # define MAX_CONNECTIONS 64
-# define BUFFER_SIZE 1024
+# define BUFFER_SIZE 20
 # define MAX_EVENTS 16
 
 class Server
@@ -33,7 +33,7 @@ class Server
 
 	void checkInputs();
 	void initAndListen();
-	std::string receiveMessage(int socket);
+	std::string receiveRequest(int socket);
 	std::string buildResponse(std::string str);
 	void sendResponse(std::string str, int socket);
 	void updateEvent(int ident, short filter, u_short flags, u_int fflags,
