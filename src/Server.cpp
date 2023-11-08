@@ -6,8 +6,7 @@
  * @param ip_address	The IP address to listen on
  * @param port			The port to listen on
  */
-Server::Server(std::string ip_address, int port): _ipAddress(ip_address), _port(port), _listeningSocket(), _request()
-{
+Server::Server(std::string ip_address, int port): _ipAddress(ip_address), _port(port), _listeningSocket(), _request() {
 	checkInputs();
 	initAndListen();
 }
@@ -15,8 +14,7 @@ Server::Server(std::string ip_address, int port): _ipAddress(ip_address), _port(
 /**
 * @brief Closes the listening socket and exits the program
 */
-Server::~Server()
-{
+Server::~Server() {
 	close(_listeningSocket);
 	exit(EXIT_SUCCESS);
 }
@@ -69,8 +67,7 @@ void Server::updateEvent(int ident, short filter, u_short flags, u_int fflags, i
  * @brief The main event loop. Waits for new events and handles them
  * in a non-blocking way.
  */
-void Server::runLoop()
-{
+void Server::runLoop() {
     struct kevent evList[MAX_EVENTS];
 	_kq = kqueue();
 
@@ -150,32 +147,12 @@ void Server::receiveRequest(int socket) {
 }
 
 /**
- * @brief Builds a response to send to the client
- *
- * @param str	The message to send
- * @return 		The response to send
- */
-std::string Server::buildResponse(std::string str, int status)
-{
-	std::string htmlFile = "<!DOCTYPE html><html lang=\"en\"><body><h1> HOME </h1><p>" + str + "</p></body></html>";
-	std::ostringstream ss;
-	ss
-		<< "HTTP/1.1" << " " << status << " " << "OK" << CRLF
-		<< "Content-Type: text/html" << CRLF
-		<< "Content-Length: " << htmlFile.size() << CRLF
-		<< CRLF
-		<< htmlFile;
-	return (ss.str());
-}
-
-/**
  * @brief Sends a response to a client socket
  *
  * @param str		The response to send
  * @param socket	The client socket to send to
  */
-void Server::sendResponse(std::string str, int socket)
-{
+void Server::sendResponse(std::string str, int socket) {
 	long	bytesSent = write(socket, str.c_str(), str.size());
 	if (bytesSent == (long)str.size())
 		logSuccess("Response sent to client\n");

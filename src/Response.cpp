@@ -32,10 +32,8 @@ std::string Response::build() {
 /**
  * @brief Resolves the status code to its corresponding string.
  */
-std::string Response::resolveStatus(int status)
-{
-	switch (status)
-	{
+std::string Response::resolveStatus(int status) {
+	switch (status) {
 		case 100:
             return "Continue";
         case 101:

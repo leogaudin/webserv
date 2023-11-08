@@ -17,8 +17,7 @@ Request::~Request() {}
 /**
  * @brief Parses the raw HTTP request and extracts the method, path, headers and body.
  */
-void Request::parse(std::string raw)
-{
+void Request::parse(std::string raw) {
 	std::istringstream iss(raw);
 	std::string token;
 	std::vector<std::string> line;
