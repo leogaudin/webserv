@@ -24,15 +24,22 @@ class Request
 	std::string _version;
 	std::map< std::string, std::vector<std::string> > _headers;
 	std::string _body;
-
-  public:
-	Request(std::string raw);
-	~Request();
-	void parse(std::string raw);
 	void addHeader(std::vector<std::string> line);
 	void parseMethod(std::string token);
 	void parsePath(std::string token);
 	void parseVersion(std::string token);
+
+  public:
+	Request();
+	Request(std::string raw);
+	~Request();
+	void parse(std::string raw);
+	std::string getRaw() const { return _raw; };
+	Method getMethod() const { return _method; };
+	std::string getPath() const { return _path; };
+	std::string getVersion() const { return _version; };
+	std::map< std::string, std::vector<std::string> > getHeaders() const { return _headers; };
+	std::string getBody() const { return _body; };
 };
 
 void	printHeaders(std::map< std::string, std::vector<std::string> > headers);

@@ -2,6 +2,7 @@
 # define SERVER_HPP
 
 # include "Request.hpp"
+# include "Response.hpp"
 # include "colors.h"
 # include <arpa/inet.h>
 # include <fcntl.h>
@@ -17,6 +18,7 @@
 # define MAX_CONNECTIONS 64
 # define BUFFER_SIZE 20
 # define MAX_EVENTS 16
+# define CRLF "\r\n"
 
 class Server
 {
@@ -30,11 +32,12 @@ class Server
 	int _port;
 	int _listeningSocket;
 	int _kq;
+	Request _request;
 
 	void checkInputs();
 	void initAndListen();
-	std::string receiveRequest(int socket);
-	std::string buildResponse(std::string str);
+	void receiveRequest(int socket);
+	std::string buildResponse(std::string str, int status);
 	void sendResponse(std::string str, int socket);
 	void updateEvent(int ident, short filter, u_short flags, u_int fflags,
 			int data, void *udata);

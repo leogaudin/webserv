@@ -1,5 +1,7 @@
 #include "../include/Request.hpp"
 
+Request::Request() {}
+
 /**
  * @brief Constructs a Request object from a raw input.
  *
@@ -60,7 +62,6 @@ void Request::parse(std::string raw)
 			}
 		}
 	}
-	printHeaders(_headers);
 	std::getline(iss, _body, '\0');
 }
 

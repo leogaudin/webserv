@@ -6,7 +6,7 @@
  * @param ip_address	The IP address to listen on
  * @param port			The port to listen on
  */
-Server::Server(std::string ip_address, int port): _ipAddress(ip_address), _port(port), _listeningSocket()
+Server::Server(std::string ip_address, int port): _ipAddress(ip_address), _port(port), _listeningSocket(), _request()
 {
 	checkInputs();
 	initAndListen();
@@ -92,13 +92,13 @@ void Server::runLoop()
 				updateEvent(eventSocket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 			}
 			else if (evList[i].filter == EVFILT_READ) {
-				std::string request = receiveRequest(eventSocket);
+				receiveRequest(eventSocket);
 				updateEvent(evList[i].ident, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
 				updateEvent(evList[i].ident, EVFILT_WRITE, EV_ENABLE, 0, 0, NULL);
 			}
 			else if (evList[i].filter == EVFILT_WRITE) {
-				std::string response = buildResponse("Hello World!");
-				sendResponse(response, eventSocket);
+				Response response = Response(_request);
+				sendResponse(response.build(), eventSocket);
 				updateEvent(evList[i].ident, EVFILT_READ, EV_ENABLE, 0, 0, NULL);
 				updateEvent(evList[i].ident, EVFILT_WRITE, EV_DISABLE, 0, 0, NULL);
 				close(eventSocket);
@@ -131,7 +131,7 @@ void Server::acceptConnection() {
  * @param socket	The client socket to receive from
  * @return 			The received message
  */
-std::string Server::receiveRequest(int socket) {
+void Server::receiveRequest(int socket) {
 	std::string stash;
 	char buffer[BUFFER_SIZE];
 	int bytesReceived = 0;
@@ -146,8 +146,7 @@ std::string Server::receiveRequest(int socket) {
 			break;
 		}
 	}
-	Request request = Request(stash);
-	return stash;
+	_request = Request(stash);
 }
 
 /**
@@ -156,11 +155,15 @@ std::string Server::receiveRequest(int socket) {
  * @param str	The message to send
  * @return 		The response to send
  */
-std::string Server::buildResponse(std::string str)
+std::string Server::buildResponse(std::string str, int status)
 {
 	std::string htmlFile = "<!DOCTYPE html><html lang=\"en\"><body><h1> HOME </h1><p>" + str + "</p></body></html>";
 	std::ostringstream ss;
-	ss << "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: " << htmlFile.size() << "\n\n"
+	ss
+		<< "HTTP/1.1" << " " << status << " " << "OK" << CRLF
+		<< "Content-Type: text/html" << CRLF
+		<< "Content-Length: " << htmlFile.size() << CRLF
+		<< CRLF
 		<< htmlFile;
 	return (ss.str());
 }
