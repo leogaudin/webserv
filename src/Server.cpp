@@ -8,6 +8,7 @@
  */
 Server::Server(std::string ip_address, int port): _ipAddress(ip_address), _port(port), _listeningSocket()
 {
+	checkInputs();
 	initAndListen();
 }
 
@@ -18,6 +19,18 @@ Server::~Server()
 {
 	close(_listeningSocket);
 	exit(EXIT_SUCCESS);
+}
+
+/**
+ * @brief Checks the validity of the IP address and port
+ */
+void Server::checkInputs() {
+	if (_ipAddress.empty())
+		exitWithError("IP address cannot be empty");
+	if (_port < 1024)
+		exitWithError("Port numbers 0 - 1023 are used for well-known ports");
+	if (_port > 49151)
+		exitWithError("Port numbers 49152 - 65535 are reserved for clients");
 }
 
 /**
@@ -64,7 +77,7 @@ void Server::runLoop()
     updateEvent(_listeningSocket, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
 	while (true) {
-		logInfo("Waiting for new events...");
+		// logInfo("Waiting for new events...");
 		int newEvents = kevent(_kq, NULL, 0, evList, MAX_EVENTS, NULL);
 		if (newEvents <= 0)
 			continue;
@@ -124,6 +137,8 @@ std::string Server::receiveMessage(int socket) {
 	if (bytesReceived < 0)
 		exitWithError("Failed to read bytes from client socket connection");
 	buffer[bytesReceived] = '\0';
+	// logInfo("Received message from client: \n" + std::string(buffer));
+	Request request = Request(std::string(buffer));
 	return (std::string(buffer));
 }
 

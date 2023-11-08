@@ -1,6 +1,7 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
+# include "Request.hpp"
 # include "colors.h"
 # include <arpa/inet.h>
 # include <fcntl.h>
@@ -30,11 +31,13 @@ class Server
 	int _listeningSocket;
 	int _kq;
 
+	void checkInputs();
 	void initAndListen();
 	std::string receiveMessage(int socket);
 	std::string buildResponse(std::string str);
 	void sendResponse(std::string str, int socket);
-	void updateEvent(int ident, short filter, u_short flags, u_int fflags, int data, void *udata);
+	void updateEvent(int ident, short filter, u_short flags, u_int fflags,
+			int data, void *udata);
 	void acceptConnection();
 };
 
