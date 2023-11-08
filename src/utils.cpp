@@ -26,7 +26,7 @@ void  logSuccess(const std::string &message)
 void	exitWithError(const std::string &errorMessage)
 {
 	logError("ERROR: " + errorMessage);
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 
