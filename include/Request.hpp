@@ -33,6 +33,7 @@ class Request
 	Request();
 	Request(std::string raw);
 	~Request();
+	Request(const Request &other);
 	void parse(std::string raw);
 	std::string getRaw() const { return _raw; };
 	Method getMethod() const { return _method; };

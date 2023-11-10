@@ -15,6 +15,20 @@ Request::Request(std::string raw)
 Request::~Request() {}
 
 /**
+ * @brief Constructs a Request object from another Request object.
+ *
+ * @param other The Request object to be copied.
+ */
+Request::Request(const Request &other) {
+	_raw = other._raw;
+	_method = other._method;
+	_path = other._path;
+	_version = other._version;
+	_headers = other._headers;
+	_body = other._body;
+}
+
+/**
  * @brief Parses the raw HTTP request and extracts the method, path, headers and body.
  */
 void Request::parse(std::string raw) {
@@ -107,4 +121,23 @@ void Request::parsePath(std::string token) {
 void Request::parseVersion(std::string token) {
 	_version = token;
 	// std::cout << "VERSION: " << _version << std::endl;
+}
+
+void printHeaders(std::map< std::string, std::vector<std::string> > headers) {
+	std::map< std::string, std::vector<std::string> >::iterator it;
+	for (it = headers.begin(); it != headers.end(); it++) {
+		std::cout << it->first << " -> ";
+		for (int i = 0; i < (int)it->second.size(); i++) {
+			std::cout << it->second[i] << " ";
+		}
+		std::cout << std::endl;
+	}
+}
+
+std::string toLowercase(std::string str) {
+	std::string res = "";
+	for (int i = 0; i < (int)str.size(); i++) {
+		res += std::tolower(str[i]);
+	}
+	return res;
 }

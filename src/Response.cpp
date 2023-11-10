@@ -5,10 +5,13 @@
  *
  * @param request The Request object to be used to construct the Response.
  */
-Response::Response(Request request) {
+Response::Response(Request request, Config config) {
+	_config = config;
+	_request = request;
 	_version = request.getVersion();
-	_status = 200;
-	_body = "<!DOCTYPE html><html lang=\"en\"><body><h1>HOME</h1><p>Hello World!</p></body></html>";
+	_status = 500;
+	_body = "";
+	resolveMethod();
 }
 
 Response::~Response() {}
@@ -27,6 +30,47 @@ std::string Response::build() {
 		<< CRLF
 		<< _body;
 	return (ss.str());
+}
+
+/**
+ * @brief Resolves the method to its corresponding handler.
+ */
+void Response::resolveMethod() {
+	switch (_request.getMethod()) {
+		case GET:
+			handleGet();
+			break;
+		// case POST:
+		// 	handlePost();
+		// 	break;
+		// case DELETE:
+		// 	handleDelete();
+		// 	break;
+		default:
+			_status = 405;
+			break;
+	}
+}
+
+void Response::handleGet() {
+	char *path = strcat(getcwd(0, 0), _request.getPath().c_str());
+	struct stat s;
+
+	if (stat(path, &s) == 0) {
+		if (s.st_mode & S_IFDIR) {
+			_status = 200;
+		}
+		else if (s.st_mode & S_IFREG) {
+			std::ifstream file((std::string(path)));
+			std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+			_body = str;
+			_status = 200;
+		}
+		else
+			_status = 404;
+	}
+	else
+		_status = 404;
 }
 
 /**
