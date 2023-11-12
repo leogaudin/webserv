@@ -7,7 +7,7 @@ int main() {
     config._serverName = "localhost";
     config._listen = 8080;
     config._root = "docs";
-    config._client_max_body_size = 10;
+    config._client_max_body_size = INT32_MAX;
     config._errorPages[404] = "error/404.html";
 
     config2._serverName = "localhost2";

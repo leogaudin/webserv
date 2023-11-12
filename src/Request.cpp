@@ -76,7 +76,7 @@ void Request::parse(std::string raw) {
 			}
 		}
 	}
-	_body = std::vector<unsigned char>(std::istreambuf_iterator<char>(iss), std::istreambuf_iterator<char>());
+	_body = std::vector<unsigned char>(raw.begin() + iss.tellg(), raw.end());
 }
 
 

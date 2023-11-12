@@ -118,6 +118,14 @@ void Response::handleGet(std::string requestedPath) {
 		handleErrorStatus(404);
 }
 
+void Response::uploadFromRequest(std::string path) {
+    std::ofstream file((std::string(path)));
+    std::vector<unsigned char> body = _request.getBody();
+    for (int i = 0; i < (int)body.size(); i++)
+        file << body[i];
+    file.close();
+}
+
 void Response::handlePost(std::string requestedPath) {
     std::string rootedPath = "/" + _config._root + requestedPath;
     char *path = strcat(getcwd(0, 0), rootedPath.c_str());
@@ -125,9 +133,7 @@ void Response::handlePost(std::string requestedPath) {
 
     if (stat(path, &s) == 0) {
         if (s.st_mode & S_IFREG) {
-            std::ofstream file((std::string(path)));
-            file << reinterpret_cast< unsigned char*>(_request.getBody().data());
-            file.close();
+            uploadFromRequest(path);
             _status = 202;
         }
         else if (s.st_mode & S_IFDIR)
@@ -136,9 +142,7 @@ void Response::handlePost(std::string requestedPath) {
             handleErrorStatus(404);
     }
     else {
-        std::ofstream file((std::string(path)));
-        file << _request.getBody().data();
-        file.close();
+        uploadFromRequest(path);
         _status = 201;
     }
 }
