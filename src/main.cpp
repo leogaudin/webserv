@@ -7,16 +7,16 @@ int main() {
     config._serverName = "localhost";
     config._listen = 8080;
     config._errorPage = "error.html";
-    config._root = "www";
+    config._root = "docs";
     config._index = "index.html";
-    config._autoindex = "on";
+    config._autoindex = false;
 
     config2._serverName = "localhost2";
     config2._listen = 8081;
     config2._errorPage = "error.html";
-    config2._root = "www";
+    config2._root = "docs";
     config2._index = "index.html";
-    config2._autoindex = "on";
+    config2._autoindex = false;
 
     // config.printConfig();
     // config2.printConfig();

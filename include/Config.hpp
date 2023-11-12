@@ -20,7 +20,7 @@ public:
     std::string _errorPage;
     std::string _root;
     std::string _index;
-    std::string _autoindex;
+    bool _autoindex;
 
     // std::vector<std::string> _locations;
 };

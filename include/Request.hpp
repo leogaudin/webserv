@@ -6,6 +6,7 @@
 # include <sstream>
 # include <string>
 # include <vector>
+# include "Config.hpp"
 
 enum	Method
 {
@@ -18,6 +19,7 @@ enum	Method
 class Request
 {
   private:
+	Config _config;
 	std::string _raw;
 	Method _method;
 	std::string _path;
@@ -31,16 +33,16 @@ class Request
 
   public:
 	Request();
-	Request(std::string raw);
+	Request(std::string raw, Config config);
 	~Request();
 	Request(const Request &other);
 	void parse(std::string raw);
-	std::string getRaw() const { return _raw; };
-	Method getMethod() const { return _method; };
-	std::string getPath() const { return _path; };
-	std::string getVersion() const { return _version; };
-	std::map< std::string, std::vector<std::string> > getHeaders() const { return _headers; };
-	std::string getBody() const { return _body; };
+	std::string getRaw() const { return _raw; }
+	Method getMethod() const { return _method; }
+	std::string getPath() const { return _path; }
+	std::string getVersion() const { return _version; }
+	std::map< std::string, std::vector<std::string> > getHeaders() const { return _headers; }
+	std::string getBody() const { return _body; }
 };
 
 void	printHeaders(std::map< std::string, std::vector<std::string> > headers);
