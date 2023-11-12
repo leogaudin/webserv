@@ -49,7 +49,7 @@ void ServerManager::runAllServers() {
 			}
 			else if (eventSocket == server->getListeningSocket()) {
 				int clientSocket = server->acceptConnection();
-				fcntl(clientSocket, F_SETFL, O_NONBLOCK);
+				// fcntl(clientSocket, F_SETFL, O_NONBLOCK);
 				updateEvent(kq, clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
 				updateEvent(kq, clientSocket, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, NULL);
 			}
