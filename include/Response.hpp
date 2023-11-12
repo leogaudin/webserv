@@ -27,9 +27,12 @@ class Response
 	int _status;
 	std::map< std::string, std::vector<std::string> > _headers;
 	std::string _body;
+	void addHeader(std::string key, std::string value);
+	std::string outputHeaders();
 	std::string resolveStatus(int status);
+	std::string resolveMimeType(std::string path);
 	void resolveMethod();
-	void handleGet();
+	void handleGet(std::string requestedPath);
 	void handlePost();
 	void handleDelete();
 };
