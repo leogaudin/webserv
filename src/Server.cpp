@@ -120,11 +120,11 @@ int Server::acceptConnection() {
  * @return 			The received message
  */
 void Server::receiveRequest(int socket) {
-	std::string stash;
+	std::string stash = "";
 	char buffer[BUFFER_SIZE];
-	int bytesReceived = 0;
+	long bytesReceived = 0;
 	while (true) {
-		bytesReceived = read(socket, buffer, BUFFER_SIZE);
+		bytesReceived = recv(socket, buffer, BUFFER_SIZE, 0);
 		if (bytesReceived < 0) {
 			logError("Failed to read request from client");
 			close(socket);
@@ -135,7 +135,8 @@ void Server::receiveRequest(int socket) {
 			break;
 		}
 	}
-	_request = Request(stash);
+	if (stash != "")
+		_request = Request(stash, _config);
 }
 
 /**
@@ -145,11 +146,22 @@ void Server::receiveRequest(int socket) {
  * @param socket	The client socket to send to
  */
 void Server::sendResponse(std::string str, int socket) {
-	long	bytesSent = write(socket, str.c_str(), str.size());
-	if (bytesSent == (long)str.size())
-		logSuccess("Response sent to client\n");
-	else
-		logError("Error sending response to client");
+	long bytesSent = 0;
+	size_t totalBytesSent = 0;
+	size_t bytesToSend = str.size();
+	const char* buffer = str.c_str();
+
+	while (totalBytesSent < bytesToSend) {
+		bytesSent = send(socket, buffer + totalBytesSent, bytesToSend - totalBytesSent, 0);
+		if (bytesSent == -1) {
+			logError("Error sending response to client: " + std::string(strerror(errno)));
+			close(socket);
+			return;
+		}
+		totalBytesSent += bytesSent;
+	}
+
+	logSuccess("Response sent to client");
 }
 
 void	Server::log(const std::string &message)
