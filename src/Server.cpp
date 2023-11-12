@@ -1,4 +1,4 @@
-#include "../include/Server.hpp"
+#include "../include/Webserv.hpp"
 
 /**
  * @brief Constructor for the Server class
@@ -30,6 +30,25 @@ void Server::checkInputs() {
 		exitWithError("Port numbers 49152 - 65535 are reserved for clients");
 }
 
+std::string getLocalIPAddress() {
+    struct ifaddrs *ifaddr, *ifa;
+    char ip[INET_ADDRSTRLEN];
+
+    if (getifaddrs(&ifaddr) == -1)
+        exitWithError("Error getting network interface information.");
+
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr != nullptr && ifa->ifa_addr->sa_family == AF_INET) {
+            struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in*>(ifa->ifa_addr);
+            inet_ntop(AF_INET, &(addr->sin_addr), ip, sizeof(ip));
+			if (!strcmp(ip, LOOPBACK)) continue;
+			break;
+        }
+    }
+;
+    return (freeifaddrs(ifaddr), ip);
+}
+
 /**
  * @brief Initialises the server and starts listening for connections
  */
@@ -40,7 +59,7 @@ void Server::initAndListen() {
 	memset(&socketInfo, 0, sizeof(socketInfo));
 	socketInfo.sin_family = AF_INET;
 	socketInfo.sin_port = htons(_config._listen);
-	socketInfo.sin_addr.s_addr = inet_addr(LOOPBACK);
+	socketInfo.sin_addr.s_addr = inet_addr(getLocalIPAddress().c_str());
 
 	_listeningSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listeningSocket < 0)
@@ -49,54 +68,8 @@ void Server::initAndListen() {
 		exitWithError("Address already in use");
 	if (listen(_listeningSocket, MAX_CONNECTIONS) < 0)
 		exitWithError("Socket listening");
-	logSuccess("Listening at http://" + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)) + "\n");
+	logSuccess("Listening on http://" + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)));
 }
-
-// /**
-//  * @brief The main event loop. Waits for new events and handles them
-//  * in a non-blocking way.
-//  */
-// void Server::runLoop() {
-//     struct kevent evList[MAX_EVENTS];
-// 	_kq = kqueue();
-// 	if (_kq == -1)
-// 		exitWithError("Failed to create kqueue");
-
-//     updateEvent(_listeningSocket, EVFILT_READ, EV_ADD, 0, 0, NULL);
-
-// 	while (true) {
-// 		// logInfo("Waiting for new events...");
-// 		int newEvents = kevent(_kq, NULL, 0, evList, MAX_EVENTS, NULL);
-// 		if (newEvents <= 0)
-// 			continue;
-// 		for (int i = 0; i < newEvents; i++) {
-// 			int eventSocket = evList[i].ident;
-// 			if (eventSocket == _listeningSocket) {
-// 				int clientSocket = acceptConnection();
-// 				fcntl(clientSocket, F_SETFL, O_NONBLOCK);
-// 				updateEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
-// 				updateEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, NULL);
-// 			}
-// 			else if (evList[i].flags & EV_EOF) {
-// 				logInfo("Client has disconnected");
-// 				updateEvent(eventSocket, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-// 				updateEvent(eventSocket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-// 			}
-// 			else if (evList[i].filter == EVFILT_READ) {
-// 				receiveRequest(eventSocket);
-// 				updateEvent(eventSocket, EVFILT_READ, EV_DISABLE, 0, 0, NULL);
-// 				updateEvent(eventSocket, EVFILT_WRITE, EV_ENABLE, 0, 0, NULL);
-// 			}
-// 			else if (evList[i].filter == EVFILT_WRITE) {
-// 				Response response = Response(_request, _config);
-// 				sendResponse(response.build(), eventSocket);
-// 				updateEvent(eventSocket, EVFILT_READ, EV_ENABLE, 0, 0, NULL);
-// 				updateEvent(eventSocket, EVFILT_WRITE, EV_DISABLE, 0, 0, NULL);
-// 				close(eventSocket);
-// 			}
-// 		}
-// 	}
-// }
 
 /**
  * @brief Accepts a new connection and adds it to the kqueue
@@ -109,7 +82,7 @@ int Server::acceptConnection() {
 	if (clientSocket == -1)
 		exitWithError("Error accepting new connection");
 	addClientSocket(clientSocket);
-	logInfo("New client connected: " + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)));
+	logInfo(std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)) + " connected");
 	return clientSocket;
 }
 

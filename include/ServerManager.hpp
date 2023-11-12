@@ -1,9 +1,7 @@
 #ifndef SERVERMANAGER_HPP
 # define SERVERMANAGER_HPP
 
-# include "Server.hpp"
-# include <vector>
-
+# include "Webserv.hpp"
 class ServerManager
 {
   public:

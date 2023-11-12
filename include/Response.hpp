@@ -1,18 +1,7 @@
 #ifndef RESPONSE_HPP
 # define RESPONSE_HPP
 
-# include "Request.hpp"
-# include "Config.hpp"
-# include <fstream>
-# include <iostream>
-# include <map>
-# include <sstream>
-# include <string>
-# include <unistd.h>
-# include <sys/stat.h>
-
-# define CRLF "\r\n"
-
+# include "Webserv.hpp"
 class Response
 {
   public:
@@ -32,8 +21,9 @@ class Response
 	std::string resolveStatus(int status);
 	std::string resolveMimeType(std::string path);
 	void resolveMethod();
+	void handleErrorStatus(int status);
 	void handleGet(std::string requestedPath);
-	void handlePost();
+	void handlePost(std::string requestedPath);
 	void handleDelete();
 };
 

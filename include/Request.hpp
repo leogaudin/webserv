@@ -1,12 +1,7 @@
 #ifndef REQUEST_HPP
 # define REQUEST_HPP
 
-# include <iostream>
-# include <map>
-# include <sstream>
-# include <string>
-# include <vector>
-# include "Config.hpp"
+# include "Webserv.hpp"
 
 enum	Method
 {
@@ -25,7 +20,7 @@ class Request
 	std::string _path;
 	std::string _version;
 	std::map< std::string, std::vector<std::string> > _headers;
-	std::string _body;
+	std::vector<unsigned char> _body;
 	void addHeader(std::vector<std::string> line);
 	void parseMethod(std::string token);
 	void parsePath(std::string token);
@@ -42,10 +37,7 @@ class Request
 	std::string getPath() const { return _path; }
 	std::string getVersion() const { return _version; }
 	std::map< std::string, std::vector<std::string> > getHeaders() const { return _headers; }
-	std::string getBody() const { return _body; }
+	std::vector<unsigned char> getBody() const { return _body; }
 };
-
-void	printHeaders(std::map< std::string, std::vector<std::string> > headers);
-std::string toLowercase(std::string str);
 
 #endif

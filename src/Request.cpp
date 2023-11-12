@@ -1,4 +1,4 @@
-#include "../include/Request.hpp"
+#include "../include/Webserv.hpp"
 
 Request::Request() {}
 
@@ -76,7 +76,7 @@ void Request::parse(std::string raw) {
 			}
 		}
 	}
-	std::getline(iss, _body, '\0');
+	_body = std::vector<unsigned char>(std::istreambuf_iterator<char>(iss), std::istreambuf_iterator<char>());
 }
 
 

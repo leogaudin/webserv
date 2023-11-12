@@ -1,4 +1,4 @@
-#include "../include/Response.hpp"
+#include "../include/Webserv.hpp"
 
 /**
  * @brief Constructs a Response object from a Request object.
@@ -46,7 +46,8 @@ std::string Response::outputHeaders() {
  */
 std::string Response::build() {
 	std::ostringstream ss;
-    addHeader("Content-Type", resolveMimeType(_request.getPath()));
+    if (_headers.find("Content-Type") == _headers.end())
+        addHeader("Content-Type", resolveMimeType(_request.getPath()));
     addHeader("Content-Length", std::to_string(_body.size()));
 	ss
 		<< _version << " " << _status << " " << resolveStatus(_status) << CRLF
@@ -60,13 +61,19 @@ std::string Response::build() {
  * @brief Resolves the method to its corresponding handler.
  */
 void Response::resolveMethod() {
+    if (_request.getBody().size() > (size_t)_config._client_max_body_size)
+    {
+		handleErrorStatus(413);
+        return;
+    }
+
 	switch (_request.getMethod()) {
 		case GET:
 			handleGet(_request.getPath());
 			break;
-		// case POST:
-		// 	handlePost();
-		// 	break;
+		case POST:
+			handlePost(_request.getPath());
+			break;
 		// case DELETE:
 		// 	handleDelete();
 		// 	break;
@@ -89,27 +96,62 @@ void Response::handleGet(std::string requestedPath) {
 			_body = str;
 		}
 		else if (s.st_mode & S_IFDIR) {
-            if (_config._autoindex)
-                (void)_body;
+            if (_config._autoindex) {
+                addHeader("Content-Type", "text/html");
                 // _body = autoindex(path);
-            else
-            {
+            }
+            else {
                 if (path[strlen(path) - 1] != '/')
                     requestedPath += "/";
-                _status = 302;
                 addHeader("Location", requestedPath + _config._index);
+                _status = 302;
             }
 		}
-		else if (path[strlen(path) - 1] != '/')
-        {
-            _status = 302;
+		else if (path[strlen(path) - 1] != '/') {
             addHeader("Location", requestedPath + "/");
+            _status = 302;
         }
         else
-			_status = 404;
+		    handleErrorStatus(404);
 	}
 	else
-		_status = 404;
+		handleErrorStatus(404);
+}
+
+void Response::handlePost(std::string requestedPath) {
+    std::string rootedPath = "/" + _config._root + requestedPath;
+    char *path = strcat(getcwd(0, 0), rootedPath.c_str());
+    struct stat s;
+
+    if (stat(path, &s) == 0) {
+        if (s.st_mode & S_IFREG) {
+            std::ofstream file((std::string(path)));
+            file << reinterpret_cast< unsigned char*>(_request.getBody().data());
+            file.close();
+            _status = 202;
+        }
+        else if (s.st_mode & S_IFDIR)
+            handleErrorStatus(405);
+        else
+            handleErrorStatus(404);
+    }
+    else {
+        std::ofstream file((std::string(path)));
+        file << _request.getBody().data();
+        file.close();
+        _status = 201;
+    }
+}
+
+void Response::handleErrorStatus(int status) {
+    std::string path = "/" + _config._root + "/" + _config._errorPages[status];
+    char *errorPath = strcat(getcwd(0, 0), path.c_str());
+
+    std::ifstream file((std::string(errorPath)));
+    std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    _body = str;
+    _status = status;
+    addHeader("Content-Type", "text/html");
 }
 
 /**

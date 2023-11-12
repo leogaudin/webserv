@@ -1,4 +1,4 @@
-#include "../include/ServerManager.hpp"
+#include "../include/Webserv.hpp"
 
 int main() {
     Config config;
@@ -6,20 +6,13 @@ int main() {
 
     config._serverName = "localhost";
     config._listen = 8080;
-    config._errorPage = "error.html";
     config._root = "docs";
-    config._index = "index.html";
-    config._autoindex = false;
+    config._client_max_body_size = 10;
+    config._errorPages[404] = "error/404.html";
 
     config2._serverName = "localhost2";
     config2._listen = 8081;
-    config2._errorPage = "error.html";
     config2._root = "docs";
-    config2._index = "index.html";
-    config2._autoindex = false;
-
-    // config.printConfig();
-    // config2.printConfig();
 
     Server server = Server(config);
     Server server2 = Server(config2);
