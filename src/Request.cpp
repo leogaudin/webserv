@@ -112,7 +112,6 @@ void Request::parseMethod(std::string token) {
  * @brief Parses the HTTP path from a given token and sets it to the Request object.
  */
 void Request::parsePath(std::string token) {
-	std::cout << "Parsed path: " << token << std::endl;
 	_path = token;
 	// std::cout << "PATH: " << _path << std::endl;
 }

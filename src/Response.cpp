@@ -79,7 +79,6 @@ void Response::resolveMethod() {
 void Response::handleGet(std::string requestedPath) {
     std::string rootedPath = "/" + _config._root + requestedPath;
 	char *path = strcat(getcwd(0, 0), rootedPath.c_str());
-    std::cout << "path: " << path << std::endl;
 	struct stat s;
 
 	if (stat(path, &s) == 0) {
