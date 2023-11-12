@@ -96,13 +96,13 @@ void Response::handleGet(std::string requestedPath) {
             {
                 if (path[strlen(path) - 1] != '/')
                     requestedPath += "/";
-                _status = 301;
+                _status = 302;
                 addHeader("Location", requestedPath + _config._index);
             }
 		}
 		else if (path[strlen(path) - 1] != '/')
         {
-            _status = 301;
+            _status = 302;
             addHeader("Location", requestedPath + "/");
         }
         else
