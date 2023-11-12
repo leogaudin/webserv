@@ -25,7 +25,7 @@ class Response
 	void handleGet(std::string requestedPath);
 	void handlePost(std::string requestedPath);
 	void uploadFromRequest(std::string path);
-	void handleDelete();
+	void handleDelete(std::string requestedPath);
 };
 
 #endif

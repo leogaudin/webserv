@@ -30,6 +30,9 @@ void Server::checkInputs() {
 		exitWithError("Port numbers 49152 - 65535 are reserved for clients");
 }
 
+/**
+ * @brief Gets the local IP address of the machine
+ */
 std::string getLocalIPAddress() {
     struct ifaddrs *ifaddr, *ifa;
     char ip[INET_ADDRSTRLEN];

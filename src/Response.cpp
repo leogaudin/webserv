@@ -25,6 +25,11 @@ void Response::addHeader(std::string key, std::string value) {
     _headers[key].push_back(value);
 }
 
+/**
+ * @brief Outputs the headers map.
+ *
+ * @return The headers map.
+ */
 std::string Response::outputHeaders() {
     std::ostringstream ss;
     for (std::map< std::string, std::vector<std::string> >::iterator it = _headers.begin(); it != _headers.end(); it++) {
@@ -74,15 +79,18 @@ void Response::resolveMethod() {
 		case POST:
 			handlePost(_request.getPath());
 			break;
-		// case DELETE:
-		// 	handleDelete();
-		// 	break;
+		case DELETE:
+			handleDelete(_request.getPath());
+			break;
 		default:
 			_status = 405;
 			break;
 	}
 }
 
+/**
+ * @brief Handles the GET method.
+ */
 void Response::handleGet(std::string requestedPath) {
     std::string rootedPath = "/" + _config._root + requestedPath;
 	char *path = strcat(getcwd(0, 0), rootedPath.c_str());
@@ -98,7 +106,7 @@ void Response::handleGet(std::string requestedPath) {
 		else if (s.st_mode & S_IFDIR) {
             if (_config._autoindex) {
                 addHeader("Content-Type", "text/html");
-                // _body = autoindex(path);
+                // TODO: _body = autoindex(path);
             }
             else {
                 if (path[strlen(path) - 1] != '/')
@@ -118,6 +126,11 @@ void Response::handleGet(std::string requestedPath) {
 		handleErrorStatus(404);
 }
 
+/**
+ * @brief Uploads the body of the request to the specified path.
+ *
+ * @param path The path to upload the body to.
+ */
 void Response::uploadFromRequest(std::string path) {
     std::ofstream file((std::string(path)));
     std::vector<unsigned char> body = _request.getBody();
@@ -126,6 +139,9 @@ void Response::uploadFromRequest(std::string path) {
     file.close();
 }
 
+/**
+ * @brief Handles the POST method.
+ */
 void Response::handlePost(std::string requestedPath) {
     std::string rootedPath = "/" + _config._root + requestedPath;
     char *path = strcat(getcwd(0, 0), rootedPath.c_str());
@@ -134,7 +150,7 @@ void Response::handlePost(std::string requestedPath) {
     if (stat(path, &s) == 0) {
         if (s.st_mode & S_IFREG) {
             uploadFromRequest(path);
-            _status = 202;
+            _status = 200;
         }
         else if (s.st_mode & S_IFDIR)
             handleErrorStatus(405);
@@ -147,6 +163,33 @@ void Response::handlePost(std::string requestedPath) {
     }
 }
 
+/**
+ * @brief Handles the DELETE method.
+ */
+void Response::handleDelete(std::string requestedPath) {
+    std::string rootedPath = "/" + _config._root + requestedPath;
+    char *path = strcat(getcwd(0, 0), rootedPath.c_str());
+    struct stat s;
+
+    if (stat(path, &s) == 0) {
+        if (s.st_mode & S_IFREG) {
+            if (remove(path) == 0)
+                _status = 200;
+            else
+                handleErrorStatus(500);
+        }
+        else if (s.st_mode & S_IFDIR)
+            handleErrorStatus(405);
+        else
+            handleErrorStatus(404);
+    }
+    else
+        handleErrorStatus(404);
+}
+
+/**
+ * @brief Resolves the status code to its corresponding error page.
+ */
 void Response::handleErrorStatus(int status) {
     std::string path = "/" + _config._root + "/" + _config._errorPages[status];
     char *errorPath = strcat(getcwd(0, 0), path.c_str());
@@ -248,6 +291,9 @@ std::string Response::resolveStatus(int status) {
 	}
 }
 
+/**
+ * @brief Resolves the extension to its corresponding MIME type.
+ */
 std::string Response::resolveMimeType(std::string path) {
     std::string extension = path.substr(path.find_last_of(".") + 1);
     if (extension == "aac") return "audio/aac";
