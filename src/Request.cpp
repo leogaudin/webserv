@@ -124,6 +124,16 @@ void Request::parseVersion(std::string token) {
 	// std::cout << "VERSION: " << _version << std::endl;
 }
 
+std::string Request::getQueryString() const {
+	std::string queryString = "";
+	std::string path = _path;
+	size_t pos = path.find("?");
+	if (pos != std::string::npos) {
+		queryString = path.substr(pos + 1);
+	}
+	return queryString;
+}
+
 void printHeaders(std::map< std::string, std::vector<std::string> > headers) {
 	std::map< std::string, std::vector<std::string> >::iterator it;
 	for (it = headers.begin(); it != headers.end(); it++) {

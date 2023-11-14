@@ -30,13 +30,13 @@ Config::Config() {
     _root = "";
     _index = "index.html";
     _client_max_body_size = 1000000;
+    _cgiPaths = std::vector<std::string>();
+    _cgiExtensions = std::vector<std::string>();
     _locations = std::map<std::string, Config>();
-    _autoindex = true;
+    _autoindex = false;
     _allowedMethods = std::vector<Method>();
     _redirect = "";
     _alias = "";
-    _cgiExtension = "";
-    _cgiPath = "";
 }
 
 Config::Config(const Config& other) {
@@ -56,8 +56,8 @@ Config& Config::operator=(const Config& other) {
         _autoindex = other._autoindex;
         _allowedMethods = other._allowedMethods;
         _redirect = other._redirect;
-        _cgiExtension = other._cgiExtension;
-        _cgiPath = other._cgiPath;
+        _cgiExtensions = other._cgiExtensions;
+        _cgiPaths = other._cgiPaths;
         _alias = other._alias;
     }
     return *this;
@@ -104,8 +104,14 @@ void Config::printConfig(int indent) {
         std::cout << indentStr << "\t" << *it << std::endl;
     }
     std::cout << indentStr << "Return: " << _redirect << std::endl;
-    std::cout << indentStr << "CgiExtension: " << _cgiExtension << std::endl;
-    std::cout << indentStr << "CgiPath: " << _cgiPath << std::endl;
+    std::cout << indentStr << "CGIExtensions: " << std::endl;
+    for (std::vector<std::string>::iterator it = _cgiExtensions.begin(); it != _cgiExtensions.end(); it++) {
+        std::cout << indentStr << "\t" << *it << std::endl;
+    }
+    std::cout << indentStr << "CGIPaths: " << std::endl;
+    for (std::vector<std::string>::iterator it = _cgiPaths.begin(); it != _cgiPaths.end(); it++) {
+        std::cout << indentStr << "\t" << *it << std::endl;
+    }
     std::cout << indentStr << "Alias: " << _alias << std::endl;
 }
 

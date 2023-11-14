@@ -24,13 +24,13 @@ class Config
 	int _client_max_body_size;
 	std::map<int, std::string> _errorPages;
 	std::map< std::string, Config > _locations;
+	std::vector<std::string> _cgiExtensions;
+	std::vector<std::string> _cgiPaths;
 
 	// Location-specific
 	bool _autoindex;
 	std::vector<Method> _allowedMethods;
 	std::string _redirect;
-	std::string _cgiExtension;
-	std::string _cgiPath;
 	std::string _alias;
 };
 

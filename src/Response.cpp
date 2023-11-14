@@ -15,6 +15,8 @@ Response::Response(Request request, Config config) {
 	_version = request.getVersion();
 	_status = 500;
 	_body = "";
+    _cgiBuilt = false;
+    _cgiResponse = "";
 	resolveMethod();
 }
 
@@ -29,16 +31,20 @@ Response::~Response() {}
  * @return The HTTP response.
  */
 std::string Response::build() {
-	std::ostringstream ss;
-    if (_headers.find("Content-Type") == _headers.end())
-        addHeader("Content-Type", resolveMimeType(_request.getPath()));
-    addHeader("Content-Length", std::to_string(_body.size()));
-	ss
-		<< _version << " " << _status << " " << resolveStatus(_status) << CRLF
-        << outputHeaders()
-		<< CRLF
-		<< _body;
-	return (ss.str());
+    if (_cgiBuilt)
+        return _cgiResponse;
+    else {
+        std::ostringstream ss;
+        if (_headers.find("Content-Type") == _headers.end())
+            addHeader("Content-Type", resolveMimeType(_request.getPath()));
+        addHeader("Content-Length", std::to_string(_body.size()));
+        ss
+            << _version << " " << _status << " " << resolveStatus(_status) << CRLF
+            << outputHeaders()
+            << CRLF
+            << _body;
+        return (ss.str());
+    }
 }
 
 /**
@@ -58,7 +64,7 @@ void Response::resolveMethod() {
         }
     }
 
-    if (_request.getHeaders()["host"].size() > 0 && _request.getHeaders()["host"][0] != _config._serverName) {
+    if (_request.getHeaders()["host"][0] != _config._serverName && _request.getHeaders()["host"][0] != _config._host) {
         handleErrorStatus(400);
         return;
     }
@@ -83,7 +89,7 @@ void Response::resolveMethod() {
  * @brief Handles the GET method.
  */
 void Response::handleGet(std::string requestedPath) {
-    std::string rootedPath = rootPath(requestedPath);
+    std::string rootedPath = rootPath(_config, requestedPath);
 	char *path = strcat(getcwd(0, 0), rootedPath.c_str());
 	struct stat s;
 
@@ -93,18 +99,26 @@ void Response::handleGet(std::string requestedPath) {
 	if (stat(path, &s) == 0) {
 		_status = 200;
         if (s.st_mode & S_IFREG) {
-			std::ifstream file((std::string(path)));
-			std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-			_body = str;
+            if (std::find(_config._cgiExtensions.begin(), _config._cgiExtensions.end(), getExtension(path)) != _config._cgiExtensions.end()) {
+                _cgiBuilt = true;
+                CGI cgi(_config, _request);
+                _cgiResponse = cgi.execute();
+            }
+            else {
+                std::ifstream file((std::string(path)));
+                std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                _body = str;
+            }
 		}
 		else if (s.st_mode & S_IFDIR) {
-            if (path[strlen(path) - 1] != '/')
-                    requestedPath += "/";
             if (_config._index != "") {
+                std::string slash = "";
+                if (path[strlen(path) - 1] != '/')
+                        slash = "/";
                 struct stat sIndex;
-                std::string indexPath = path + _config._index;
+                std::string indexPath = path + slash + _config._index;
                 if (stat(indexPath.c_str(), &sIndex) == 0) {
-                    redirect(requestedPath + _config._index);
+                    redirect(requestedPath + slash + _config._index);
                 }
                 else if (_config._autoindex)
                     _body = autoindex(requestedPath);
@@ -126,7 +140,7 @@ void Response::handleGet(std::string requestedPath) {
  * @brief Handles the POST method.
  */
 void Response::handlePost(std::string requestedPath) {
-    std::string rootedPath = rootPath(requestedPath);
+    std::string rootedPath = rootPath(_config, requestedPath);
     char *path = strcat(getcwd(0, 0), rootedPath.c_str());
     struct stat s;
 
@@ -135,8 +149,13 @@ void Response::handlePost(std::string requestedPath) {
 
     if (stat(path, &s) == 0) {
         if (s.st_mode & S_IFREG) {
-            uploadFromRequest(path);
-            _status = 200;
+            if (std::find(_config._cgiExtensions.begin(), _config._cgiExtensions.end(), getExtension(path)) != _config._cgiExtensions.end()) {
+                _cgiBuilt = true;
+                CGI cgi(_config, _request);
+                _cgiResponse = cgi.execute();
+            }
+            else
+                handleErrorStatus(409);
         }
         else if (s.st_mode & S_IFDIR)
             handleErrorStatus(405);
@@ -153,7 +172,7 @@ void Response::handlePost(std::string requestedPath) {
  * @brief Handles the DELETE method.
  */
 void Response::handleDelete(std::string requestedPath) {
-    std::string rootedPath = rootPath(requestedPath);
+    std::string rootedPath = rootPath(_config, requestedPath);
     char *path = strcat(getcwd(0, 0), rootedPath.c_str());
     struct stat s;
 
@@ -258,7 +277,7 @@ std::string Response::getLocationName(std::string path, Config &config) {
 }
 
 std::string Response::autoindex(std::string path) {
-    std::string rootedPath = rootPath(path);
+    std::string rootedPath = rootPath(_config, path);
     char *dirPath = strcat(getcwd(0, 0), rootedPath.c_str());
     DIR *dir;
     struct dirent *ent;
@@ -278,13 +297,13 @@ std::string Response::autoindex(std::string path) {
     return html;
 }
 
-std::string Response::rootPath(std::string requestedPath) {
+std::string rootPath(Config config, std::string requestedPath) {
     std::string rootedPath;
 
-    if (_config._alias != "")
-        rootedPath = "/" + _config._alias + requestedPath;
-    else if (_config._root != "")
-        rootedPath = "/" + _config._root + requestedPath;
+    if (config._alias != "")
+        rootedPath = "/" + config._alias + requestedPath;
+    else if (config._root != "")
+        rootedPath = "/" + config._root + requestedPath;
     else
         rootedPath = requestedPath;
 
@@ -292,7 +311,7 @@ std::string Response::rootPath(std::string requestedPath) {
 }
 
 void Response::redirect(std::string path) {
-    addHeader("Location", path);
+    addHeader("location", path);
     _status = 302;
 }
 
@@ -399,6 +418,9 @@ std::string Response::resolveStatus(int status) {
  */
 std::string Response::resolveMimeType(std::string path) {
     std::string extension = path.substr(path.find_last_of(".") + 1);
+    std::vector<std::string>::iterator it = std::find(_config._cgiExtensions.begin(), _config._cgiExtensions.end(), extension);
+    if (it != _config._cgiExtensions.end())
+        return "text/html";
     if (extension == "aac") return "audio/aac";
     if (extension == "abw") return "application/x-abiword";
     if (extension == "arc") return "application/x-freearc";

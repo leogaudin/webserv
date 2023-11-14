@@ -9,6 +9,7 @@ enum	Method
 	UNKNOWN
 };
 
+# include <algorithm>
 # include <arpa/inet.h>
 # include <dirent.h>
 # include <fcntl.h>
@@ -31,6 +32,7 @@ enum	Method
 # include "colors.h"
 # include "Config.hpp"
 # include "Request.hpp"
+# include "CGI.hpp"
 # include "Response.hpp"
 # include "Server.hpp"
 # include "ServerManager.hpp"

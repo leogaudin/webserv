@@ -5,19 +5,6 @@
 
 class Request
 {
-  private:
-	Config _config;
-	std::string _raw;
-	Method _method;
-	std::string _path;
-	std::string _version;
-	std::map< std::string, std::vector<std::string> > _headers;
-	std::vector<unsigned char> _body;
-	void addHeader(std::vector<std::string> line);
-	void parseMethod(std::string token);
-	void parsePath(std::string token);
-	void parseVersion(std::string token);
-
   public:
 	Request();
 	Request(std::string raw, Config config);
@@ -30,6 +17,20 @@ class Request
 	std::string getVersion() const { return _version; }
 	std::map< std::string, std::vector<std::string> > getHeaders() const { return _headers; }
 	std::vector<unsigned char> getBody() const { return _body; }
+	std::string getQueryString() const;
+
+  private:
+	Config _config;
+	std::string _raw;
+	Method _method;
+	std::string _path;
+	std::string _version;
+	std::map< std::string, std::vector<std::string> > _headers;
+	std::vector<unsigned char> _body;
+	void addHeader(std::vector<std::string> line);
+	void parseMethod(std::string token);
+	void parsePath(std::string token);
+	void parseVersion(std::string token);
 };
 
 #endif
