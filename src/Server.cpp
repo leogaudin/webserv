@@ -31,28 +31,6 @@ void Server::checkInputs() {
 }
 
 /**
- * @brief Gets the local IP address of the machine
- */
-std::string getLocalIPAddress() {
-    struct ifaddrs *ifaddr, *ifa;
-    char ip[INET_ADDRSTRLEN];
-
-    if (getifaddrs(&ifaddr) == -1)
-        exitWithError("Error getting network interface information.");
-
-    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr != nullptr && ifa->ifa_addr->sa_family == AF_INET) {
-            struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in*>(ifa->ifa_addr);
-            inet_ntop(AF_INET, &(addr->sin_addr), ip, sizeof(ip));
-			if (!strcmp(ip, LOOPBACK)) continue;
-			break;
-        }
-    }
-;
-    return (freeifaddrs(ifaddr), ip);
-}
-
-/**
  * @brief Initialises the server and starts listening for connections
  */
 void Server::initAndListen() {
@@ -62,15 +40,15 @@ void Server::initAndListen() {
 	memset(&socketInfo, 0, sizeof(socketInfo));
 	socketInfo.sin_family = AF_INET;
 	socketInfo.sin_port = htons(_config._listen);
-	socketInfo.sin_addr.s_addr = inet_addr(getLocalIPAddress().c_str());
+	socketInfo.sin_addr.s_addr = inet_addr(_config._host.c_str());
 
 	_listeningSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (_listeningSocket < 0)
-		exitWithError("Creating socket");
-	if (bind(_listeningSocket, (sockaddr *)&socketInfo, socketInfoSize) < 0 && errno == EADDRINUSE)
-		exitWithError("Address already in use");
+		exitWithError("Error creating socket: " + std::string(strerror(errno)));
+	if (bind(_listeningSocket, (sockaddr *)&socketInfo, socketInfoSize) < 0)
+		exitWithError("Error binding socket: " + std::string(strerror(errno)));
 	if (listen(_listeningSocket, MAX_CONNECTIONS) < 0)
-		exitWithError("Socket listening");
+		exitWithError("Socket listening failed: " + std::string(strerror(errno)));
 	logSuccess("Listening on http://" + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)));
 }
 

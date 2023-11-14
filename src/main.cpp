@@ -5,21 +5,26 @@ int main() {
     Config config2;
 
     config._serverName = "localhost";
-    config._listen = 8080;
+    config._listen = 8082;
+    // config._host = LOOPBACK;
     config._root = "docs";
     config._client_max_body_size = INT32_MAX;
     config._errorPages[404] = "error/404.html";
+    config._locations["/subsite"] = config.toLocationConfig();
+    config._locations["/subsite"]._allowedMethods.push_back(GET);
+    config._locations["/subsite"]._allowedMethods.push_back(POST);
+    config._locations["/subsite"]._redirect = "contact.html";
 
-    config2._serverName = "localhost2";
-    config2._listen = 8081;
-    config2._root = "docs";
+    config.printConfig();
+
+    // config2.printConfig();
 
     Server server = Server(config);
-    Server server2 = Server(config2);
+    // Server server2 = Server(config2);
 
     ServerManager manager = ServerManager();
     manager.addServer(&server);
-    manager.addServer(&server2);
+    // manager.addServer(&server2);
 
     manager.runAllServers();
 

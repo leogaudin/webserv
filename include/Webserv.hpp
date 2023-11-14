@@ -1,7 +1,16 @@
 #ifndef WEBSERV_HPP
 # define WEBSERV_HPP
 
+enum	Method
+{
+	GET,
+	POST,
+	DELETE,
+	UNKNOWN
+};
+
 # include <arpa/inet.h>
+# include <dirent.h>
 # include <fcntl.h>
 # include <fstream>
 # include <ifaddrs.h>
@@ -19,12 +28,12 @@
 # include <unistd.h>
 # include <vector>
 
+# include "colors.h"
 # include "Config.hpp"
 # include "Request.hpp"
 # include "Response.hpp"
 # include "Server.hpp"
 # include "ServerManager.hpp"
-# include "colors.h"
 
 # define CRLF "\r\n"
 # define MAX_CONNECTIONS 255

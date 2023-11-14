@@ -12,20 +12,28 @@ class Response
   private:
 	Request _request;
 	Config _config;
+	std::string _locationName;
 	std::string _version;
 	int _status;
+
 	std::map< std::string, std::vector<std::string> > _headers;
 	std::string _body;
-	void addHeader(std::string key, std::string value);
-	std::string outputHeaders();
-	std::string resolveStatus(int status);
-	std::string resolveMimeType(std::string path);
 	void resolveMethod();
-	void handleErrorStatus(int status);
 	void handleGet(std::string requestedPath);
 	void handlePost(std::string requestedPath);
-	void uploadFromRequest(std::string path);
 	void handleDelete(std::string requestedPath);
+	void handleErrorStatus(int status);
+	void addHeader(std::string key, std::string value);
+	std::string outputHeaders();
+	void uploadFromRequest(std::string path);
+	Config getLocationConfig(std::string path, Config &config);
+	std::string getLocationName(std::string path, Config &config);
+	std::string autoindex(std::string path);
+	std::string rootPath(std::string requestedPath);
+	void redirect(std::string path);
+	bool checkRedirect();
+	std::string resolveStatus(int status);
+	std::string resolveMimeType(std::string path);
 };
 
 #endif

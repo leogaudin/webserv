@@ -1,12 +1,42 @@
 
 #include "../include/Webserv.hpp"
 
+/**
+ * @brief Gets the local IP address of the machine
+ */
+std::string getLocalIPAddress() {
+    struct ifaddrs *ifaddr, *ifa;
+    char ip[INET_ADDRSTRLEN];
+
+    if (getifaddrs(&ifaddr) == -1)
+        exitWithError("Error getting network interface information.");
+
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr != nullptr && ifa->ifa_addr->sa_family == AF_INET) {
+            struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in*>(ifa->ifa_addr);
+            inet_ntop(AF_INET, &(addr->sin_addr), ip, sizeof(ip));
+			if (!strcmp(ip, LOOPBACK)) continue;
+			break;
+        }
+    }
+;
+    return (freeifaddrs(ifaddr), ip);
+}
+
 Config::Config() {
-    _serverName = "_";
+    _serverName = "";
+    _host = getLocalIPAddress();
+    _listen = 8080;
     _root = "";
     _index = "index.html";
-    _autoindex = false;
     _client_max_body_size = 1000000;
+    _locations = std::map<std::string, Config>();
+    _autoindex = true;
+    _allowedMethods = std::vector<Method>();
+    _redirect = "";
+    _alias = "";
+    _cgiExtension = "";
+    _cgiPath = "";
 }
 
 Config::Config(const Config& other) {
@@ -15,28 +45,67 @@ Config::Config(const Config& other) {
 
 Config& Config::operator=(const Config& other) {
     if (this != &other) {
-        _serverName = other._serverName;
+        _host = other._host;
         _listen = other._listen;
+        _serverName = other._serverName;
         _root = other._root;
         _index = other._index;
-        _autoindex = other._autoindex;
         _client_max_body_size = other._client_max_body_size;
         _errorPages = other._errorPages;
+        _locations = other._locations;
+        _autoindex = other._autoindex;
+        _allowedMethods = other._allowedMethods;
+        _redirect = other._redirect;
+        _cgiExtension = other._cgiExtension;
+        _cgiPath = other._cgiPath;
+        _alias = other._alias;
     }
     return *this;
 }
 
 Config::~Config() {}
 
-void Config::printConfig() {
-    std::cout << "ServerName: " << _serverName << std::endl;
-    std::cout << "Listen: " << _listen << std::endl;
-    std::cout << "Root: " << _root << std::endl;
-    std::cout << "Index: " << _index << std::endl;
-    std::cout << "Autoindex: " << _autoindex << std::endl;
-    std::cout << "ClientMaxBodySize: " << _client_max_body_size << std::endl;
-    std::cout << "ErrorPages: " << std::endl;
-    for (std::map<int, std::string>::iterator it = _errorPages.begin(); it != _errorPages.end(); it++) {
-        std::cout << "\t" << it->first << ": " << it->second << std::endl;
-    }
+/**
+ * @brief   Returns a config object without any location-specific information
+ * to avoid infinite recursion.
+ *
+ * @param    config    the raw config object
+ * @return   Config    the clean config object
+ */
+Config Config::toLocationConfig() {
+    Config locationConfig = *(this);
+    locationConfig._locations.clear();
+    return locationConfig;
 }
+
+void Config::printConfig(int indent) {
+    std::string indentStr = "";
+    for (int i = 0; i < indent; i++) {
+        indentStr += "\t";
+    }
+    std::cout << indentStr << "Listen: " << _listen << std::endl;
+    std::cout << indentStr << "Host: " << _host << std::endl;
+    std::cout << indentStr << "ServerName: " << _serverName << std::endl;
+    std::cout << indentStr << "Root: " << _root << std::endl;
+    std::cout << indentStr << "Index: " << _index << std::endl;
+    std::cout << indentStr << "Autoindex: " << _autoindex << std::endl;
+    std::cout << indentStr << "ClientMaxBodySize: " << _client_max_body_size << std::endl;
+    std::cout << indentStr << "ErrorPages: " << std::endl;
+    for (std::map<int, std::string>::iterator it = _errorPages.begin(); it != _errorPages.end(); it++) {
+        std::cout << indentStr << "\t" << it->first << ": " << it->second << std::endl;
+    }
+    std::cout << indentStr << "Locations: " << std::endl;
+    for (std::map<std::string, Config>::iterator it = _locations.begin(); it != _locations.end(); it++) {
+        std::cout << indentStr << "\t" << it->first << ": " << std::endl;
+        it->second.printConfig(indent + 1);
+    }
+    std::cout << indentStr << "AllowedMethods: " << std::endl;
+    for (std::vector<Method>::iterator it = _allowedMethods.begin(); it != _allowedMethods.end(); it++) {
+        std::cout << indentStr << "\t" << *it << std::endl;
+    }
+    std::cout << indentStr << "Return: " << _redirect << std::endl;
+    std::cout << indentStr << "CgiExtension: " << _cgiExtension << std::endl;
+    std::cout << indentStr << "CgiPath: " << _cgiPath << std::endl;
+    std::cout << indentStr << "Alias: " << _alias << std::endl;
+}
+

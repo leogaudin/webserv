@@ -3,14 +3,6 @@
 
 # include "Webserv.hpp"
 
-enum	Method
-{
-	GET,
-	POST,
-	DELETE,
-	UNKNOWN
-};
-
 class Request
 {
   private:

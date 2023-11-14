@@ -1,12 +1,16 @@
 #include "../include/Webserv.hpp"
 
+
+// CONSTRUCTORS / DESTRUCTORS
+
 /**
  * @brief Constructs a Response object from a Request object.
  *
  * @param request The Request object to be used to construct the Response.
  */
 Response::Response(Request request, Config config) {
-	_config = config;
+	_config = getLocationConfig(request.getPath(), config);
+    _locationName = getLocationName(request.getPath(), config);
 	_request = request;
 	_version = request.getVersion();
 	_status = 500;
@@ -16,33 +20,8 @@ Response::Response(Request request, Config config) {
 
 Response::~Response() {}
 
-/**
- * @brief Adds a header to the headers map.
- *
- * @param line The header to be added.
- */
-void Response::addHeader(std::string key, std::string value) {
-    _headers[key].push_back(value);
-}
 
-/**
- * @brief Outputs the headers map.
- *
- * @return The headers map.
- */
-std::string Response::outputHeaders() {
-    std::ostringstream ss;
-    for (std::map< std::string, std::vector<std::string> >::iterator it = _headers.begin(); it != _headers.end(); it++) {
-        ss << it->first << ": ";
-        for (std::vector<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++) {
-            ss << *it2;
-            if (it2 + 1 != it->second.end())
-                ss << ", ";
-        }
-        ss << CRLF;
-    }
-    return (ss.str());
-}
+// KEY METHODS
 
 /**
  * @brief Builds the HTTP response.
@@ -72,6 +51,13 @@ void Response::resolveMethod() {
         return;
     }
 
+    if (_config._allowedMethods.size() > 0) {
+        if (std::find(_config._allowedMethods.begin(), _config._allowedMethods.end(), _request.getMethod()) == _config._allowedMethods.end()) {
+            handleErrorStatus(405);
+            return;
+        }
+    }
+
 	switch (_request.getMethod()) {
 		case GET:
 			handleGet(_request.getPath());
@@ -92,9 +78,12 @@ void Response::resolveMethod() {
  * @brief Handles the GET method.
  */
 void Response::handleGet(std::string requestedPath) {
-    std::string rootedPath = "/" + _config._root + requestedPath;
+    std::string rootedPath = rootPath(requestedPath);
 	char *path = strcat(getcwd(0, 0), rootedPath.c_str());
 	struct stat s;
+
+    if (checkRedirect())
+        return;
 
 	if (stat(path, &s) == 0) {
 		_status = 200;
@@ -104,21 +93,22 @@ void Response::handleGet(std::string requestedPath) {
 			_body = str;
 		}
 		else if (s.st_mode & S_IFDIR) {
-            if (_config._autoindex) {
-                addHeader("Content-Type", "text/html");
-                // TODO: _body = autoindex(path);
-            }
-            else {
-                if (path[strlen(path) - 1] != '/')
+            if (path[strlen(path) - 1] != '/')
                     requestedPath += "/";
-                addHeader("Location", requestedPath + _config._index);
-                _status = 302;
+            if (_config._index != "") {
+                struct stat sIndex;
+                std::string indexPath = path + _config._index;
+                if (stat(indexPath.c_str(), &sIndex) == 0) {
+                    redirect(requestedPath + _config._index);
+                }
+                else if (_config._autoindex)
+                    _body = autoindex(requestedPath);
+                else
+                    handleErrorStatus(404);
             }
 		}
-		else if (path[strlen(path) - 1] != '/') {
-            addHeader("Location", requestedPath + "/");
-            _status = 302;
-        }
+		else if (path[strlen(path) - 1] != '/')
+            redirect(requestedPath + "/");
         else
 		    handleErrorStatus(404);
 	}
@@ -126,26 +116,17 @@ void Response::handleGet(std::string requestedPath) {
 		handleErrorStatus(404);
 }
 
-/**
- * @brief Uploads the body of the request to the specified path.
- *
- * @param path The path to upload the body to.
- */
-void Response::uploadFromRequest(std::string path) {
-    std::ofstream file((std::string(path)));
-    std::vector<unsigned char> body = _request.getBody();
-    for (int i = 0; i < (int)body.size(); i++)
-        file << body[i];
-    file.close();
-}
 
 /**
  * @brief Handles the POST method.
  */
 void Response::handlePost(std::string requestedPath) {
-    std::string rootedPath = "/" + _config._root + requestedPath;
+    std::string rootedPath = rootPath(requestedPath);
     char *path = strcat(getcwd(0, 0), rootedPath.c_str());
     struct stat s;
+
+    if (checkRedirect())
+        return;
 
     if (stat(path, &s) == 0) {
         if (s.st_mode & S_IFREG) {
@@ -167,9 +148,12 @@ void Response::handlePost(std::string requestedPath) {
  * @brief Handles the DELETE method.
  */
 void Response::handleDelete(std::string requestedPath) {
-    std::string rootedPath = "/" + _config._root + requestedPath;
+    std::string rootedPath = rootPath(requestedPath);
     char *path = strcat(getcwd(0, 0), rootedPath.c_str());
     struct stat s;
+
+    if (checkRedirect())
+        return;
 
     if (stat(path, &s) == 0) {
         if (s.st_mode & S_IFREG) {
@@ -199,6 +183,120 @@ void Response::handleErrorStatus(int status) {
     _body = str;
     _status = status;
     addHeader("Content-Type", "text/html");
+}
+
+
+// UTILS
+
+/**
+ * @brief Adds a header to the headers map.
+ *
+ * @param line The header to be added.
+ */
+void Response::addHeader(std::string key, std::string value) {
+    if (_headers.find(key) == _headers.end())
+        _headers[key] = std::vector<std::string>();
+    _headers[key].push_back(value);
+}
+
+/**
+ * @brief Outputs the headers map.
+ *
+ * @return The headers map.
+ */
+std::string Response::outputHeaders() {
+    std::ostringstream ss;
+    for (std::map< std::string, std::vector<std::string> >::iterator it = _headers.begin(); it != _headers.end(); it++) {
+        ss << it->first << ": ";
+        for (std::vector<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++) {
+            ss << *it2;
+            if (it2 + 1 != it->second.end())
+                ss << ", ";
+        }
+        ss << CRLF;
+    }
+    return (ss.str());
+}
+
+/**
+ * @brief Uploads the body of the request to the specified path.
+ *
+ * @param path The path to upload the body to.
+ */
+void Response::uploadFromRequest(std::string path) {
+    std::ofstream file((std::string(path)));
+    std::vector<unsigned char> body = _request.getBody();
+    for (int i = 0; i < (int)body.size(); i++)
+        file << body[i];
+    file.close();
+}
+
+Config Response::getLocationConfig(std::string path, Config &config) {
+    std::map< std::string, Config >::iterator it;
+    for (it = config._locations.begin(); it != config._locations.end(); it++) {
+        if (path.find(it->first) == 0)
+        {
+            it->second._locations.clear();
+            return it->second;
+        }
+    }
+    return config;
+}
+
+std::string Response::getLocationName(std::string path, Config &config) {
+    std::map< std::string, Config >::iterator it;
+    for (it = config._locations.begin(); it != config._locations.end(); it++) {
+        if (path.find(it->first) == 0)
+            return it->first;
+    }
+    return "";
+}
+
+std::string Response::autoindex(std::string path) {
+    std::string rootedPath = rootPath(path);
+    char *dirPath = strcat(getcwd(0, 0), rootedPath.c_str());
+    DIR *dir;
+    struct dirent *ent;
+    std::string html = "<html><head><title>Index of " + path + "</title></head><body><h1>Index of " + path + "</h1><hr><pre>";
+    if ((dir = opendir(dirPath)) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            if (ent->d_name[0] == '.' && path == "/")
+                continue;
+            html += "<a href=\"" + path + (path[path.size() - 1] == '/' ? "" : "/") + ent->d_name + "\">" + ent->d_name + "</a><br>";
+        }
+        closedir(dir);
+    } else {
+        perror("Could not open directory");
+    }
+    html += "</pre><hr></body></html>";
+    addHeader("Content-Type", "text/html");
+    return html;
+}
+
+std::string Response::rootPath(std::string requestedPath) {
+    std::string rootedPath;
+
+    if (_config._alias != "")
+        rootedPath = "/" + _config._alias + requestedPath;
+    else if (_config._root != "")
+        rootedPath = "/" + _config._root + requestedPath;
+    else
+        rootedPath = requestedPath;
+
+    return rootedPath;
+}
+
+void Response::redirect(std::string path) {
+    addHeader("Location", path);
+    _status = 302;
+}
+
+bool Response::checkRedirect() {
+    if (_config._redirect != "") {
+        redirect(_config._redirect);
+        return true;
+    }
+    return false;
 }
 
 /**
