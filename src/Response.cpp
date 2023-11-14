@@ -58,6 +58,11 @@ void Response::resolveMethod() {
         }
     }
 
+    if (_request.getHeaders()["host"].size() > 0 && _request.getHeaders()["host"][0] != _config._serverName) {
+        handleErrorStatus(400);
+        return;
+    }
+
 	switch (_request.getMethod()) {
 		case GET:
 			handleGet(_request.getPath());
