@@ -4,7 +4,7 @@
 // CONSTRUCTORS / DESTRUCTORS
 
 /**
- * @brief Constructs a Response object from a Request object.
+ * @brief   Constructs a Response object from a Request object.
  *
  * @param request The Request object to be used to construct the Response.
  */
@@ -26,9 +26,7 @@ Response::~Response() {}
 // KEY METHODS
 
 /**
- * @brief Builds the HTTP response.
- *
- * @return The HTTP response.
+ * @brief   Builds the HTTP response.
  */
 std::string Response::build() {
     if (_cgiBuilt)
@@ -48,7 +46,18 @@ std::string Response::build() {
 }
 
 /**
- * @brief Resolves the method to its corresponding handler.
+ * @brief   Resolves the HTTP method of the request and calls the appropriate handler function.
+ *
+ * It first checks if the size of the request body exceeds the maximum allowed size.
+ * If it does, it handles a 413 Payload Too Large error and returns.
+ *
+ * If not, it checks if the request method is in the list of allowed methods.
+ * If it's not, it handles a 405 Method Not Allowed error and returns.
+ *
+ * If it is, it checks if the host header of the request matches the server name or host in the configuration.
+ * If it doesn't, it handles a 400 Bad Request error and returns.
+ *
+ * If it does, it switches on the request method and calls the appropriate handler function.
  */
 void Response::resolveMethod() {
     if (_request.getBody().size() > (size_t)_config._client_max_body_size)
@@ -86,7 +95,20 @@ void Response::resolveMethod() {
 }
 
 /**
- * @brief Handles the GET method.
+ * @brief   Handles a GET request for a specified path.
+ *
+ * It first checks if the path is a redirect.
+ *
+ * If it's a file, it checks if the file's extension is in the list of CGI extensions.
+ *
+ * If the path corresponds to a directory, it checks if an index file is specified in the configuration.
+ * If it is, it redirects to the index file.
+ * If not, it checks if autoindexing is enabled.
+ * If not, it returns a 404 error.
+ *
+ * If the path doesn't correspond to a file or a directory, it checks if the path ends with a slash.
+ * If it doesn't, it redirects to the path with a slash appended.
+ * If it does, it returns a 404 error.
  */
 void Response::handleGet(std::string requestedPath) {
     std::string rootedPath = rootPath(_config, requestedPath);
@@ -137,7 +159,15 @@ void Response::handleGet(std::string requestedPath) {
 
 
 /**
- * @brief Handles the POST method.
+ * @brief   Handles a POST request for a specified path.
+ *
+ * It first checks if the path is a redirect.
+ * If not, it checks if the path corresponds to a file or a directory.
+ * If it's a file, it checks if the file's extension is in the list of CGI extensions.
+ * If it is, it executes the CGI script and sends the output as HTTP response.
+ * If it's not, that means the user is trying to create an existing file, it returns a 409 Conflict error.
+ * If the path corresponds to a directory, it returns a 405 Method Not Allowed error.
+ * If the path doesn't correspond to a file or a directory, it uploads the content of the request to the path and sets the status to 201 Created.
  */
 void Response::handlePost(std::string requestedPath) {
     std::string rootedPath = rootPath(_config, requestedPath);
@@ -169,7 +199,15 @@ void Response::handlePost(std::string requestedPath) {
 }
 
 /**
- * @brief Handles the DELETE method.
+ * @brief   Handles a DELETE request for a specified path.
+ *
+ * It first checks if the path is a redirect.
+ * If not, it checks if the path corresponds to a file or a directory.
+ * If it's a file, it attempts to delete the file.
+ * If the deletion is successful, it sets the status to 200 OK.
+ * If it's not successful, it sets the status to 500 Internal Server Error.
+ * If the path corresponds to a directory, it sets the status to 405 Method Not Allowed.
+ * If the path doesn't correspond to a file or a directory, it sets the status to 404 Not Found.
  */
 void Response::handleDelete(std::string requestedPath) {
     std::string rootedPath = rootPath(_config, requestedPath);
@@ -196,7 +234,7 @@ void Response::handleDelete(std::string requestedPath) {
 }
 
 /**
- * @brief Resolves the status code to its corresponding error page.
+ * @brief   Resolves the status code to its corresponding error page.
  */
 void Response::handleErrorStatus(int status) {
     std::string path = "/" + _config._root + "/" + _config._errorPages[status];
@@ -213,9 +251,7 @@ void Response::handleErrorStatus(int status) {
 // UTILS
 
 /**
- * @brief Adds a header to the headers map.
- *
- * @param line The header to be added.
+ * @brief   Adds a header to the headers map.
  */
 void Response::addHeader(std::string key, std::string value) {
     if (_headers.find(key) == _headers.end())
@@ -224,7 +260,7 @@ void Response::addHeader(std::string key, std::string value) {
 }
 
 /**
- * @brief Outputs the headers map.
+ * @brief   Outputs the headers map.
  *
  * @return The headers map.
  */
@@ -243,9 +279,7 @@ std::string Response::outputHeaders() {
 }
 
 /**
- * @brief Uploads the body of the request to the specified path.
- *
- * @param path The path to upload the body to.
+ * @brief   Uploads the body of the request to the specified path.
  */
 void Response::uploadFromRequest(std::string path) {
     std::ofstream file((std::string(path)));
@@ -255,6 +289,14 @@ void Response::uploadFromRequest(std::string path) {
     file.close();
 }
 
+/**
+ * @brief   Retrieves the configuration for a specific location.
+ *
+ * This function retrieves the configuration for a specific location from a given configuration object.
+ * It iterates over the locations in the configuration object and checks if the requested path matches the location.
+ * If a match is found, it clears the locations in the matched configuration and returns it.
+ * If no match is found, it returns the original configuration object.
+ */
 Config Response::getLocationConfig(std::string path, Config &config) {
     std::map< std::string, Config >::iterator it;
     for (it = config._locations.begin(); it != config._locations.end(); it++) {
@@ -267,6 +309,14 @@ Config Response::getLocationConfig(std::string path, Config &config) {
     return config;
 }
 
+/**
+ * @brief   Retrieves the name of the location for a specific path.
+ *
+ * This function retrieves the name of the location for a specific path from a given configuration object.
+ * It iterates over the locations in the configuration object and checks if the requested path matches the location.
+ * If a match is found, it returns the name of the location.
+ * If no match is found, it returns an empty string.
+ */
 std::string Response::getLocationName(std::string path, Config &config) {
     std::map< std::string, Config >::iterator it;
     for (it = config._locations.begin(); it != config._locations.end(); it++) {
@@ -276,6 +326,14 @@ std::string Response::getLocationName(std::string path, Config &config) {
     return "";
 }
 
+/**
+ * @brief   Generates an HTML page listing the contents of a directory.
+ *
+ * This function generates an HTML page that lists the contents of a directory specified by the path parameter.
+ * It first constructs the full path of the directory, then opens the directory and reads its contents.
+ * For each entry in the directory, it adds a link to the HTML page.
+ * The HTML page is then returned as a string.
+ */
 std::string Response::autoindex(std::string path) {
     std::string rootedPath = rootPath(_config, path);
     char *dirPath = strcat(getcwd(0, 0), rootedPath.c_str());
@@ -297,6 +355,14 @@ std::string Response::autoindex(std::string path) {
     return html;
 }
 
+/**
+ * @brief   Constructs a path based on a configuration object and a requested path.
+ *
+ * This function constructs a path based on a configuration object and a requested path.
+ * If the configuration object has an alias, the alias is prepended to the requested path.
+ * If not, but the configuration object has a root, the root is prepended to the requested path.
+ * If neither an alias nor a root is present, the requested path is returned as is.
+ */
 std::string rootPath(Config config, std::string requestedPath) {
     std::string rootedPath;
 
@@ -310,11 +376,17 @@ std::string rootPath(Config config, std::string requestedPath) {
     return rootedPath;
 }
 
+/**
+ * @brief   Sets a redirect header and status.
+ */
 void Response::redirect(std::string path) {
     addHeader("location", path);
     _status = 302;
 }
 
+/**
+ * @brief   Checks if a redirect is set in the configuration.
+ */
 bool Response::checkRedirect() {
     if (_config._redirect != "") {
         redirect(_config._redirect);
@@ -324,7 +396,7 @@ bool Response::checkRedirect() {
 }
 
 /**
- * @brief Resolves the status code to its corresponding string.
+ * @brief   Resolves the status code to its corresponding string.
  */
 std::string Response::resolveStatus(int status) {
 	switch (status) {
@@ -414,7 +486,7 @@ std::string Response::resolveStatus(int status) {
 }
 
 /**
- * @brief Resolves the extension to its corresponding MIME type.
+ * @brief   Resolves the extension to its corresponding MIME type.
  */
 std::string Response::resolveMimeType(std::string path) {
     std::string extension = path.substr(path.find_last_of(".") + 1);

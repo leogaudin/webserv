@@ -3,7 +3,7 @@
 Request::Request() {}
 
 /**
- * @brief Constructs a Request object from a raw input.
+ * @brief	Constructs a Request object from a raw input.
  *
  * @param raw The raw input to be parsed.
  */
@@ -16,7 +16,7 @@ Request::Request(std::string raw, Config config)
 Request::~Request() {}
 
 /**
- * @brief Constructs a Request object from another Request object.
+ * @brief	Constructs a Request object from another Request object.
  *
  * @param other The Request object to be copied.
  */
@@ -30,7 +30,15 @@ Request::Request(const Request &other) {
 }
 
 /**
- * @brief Parses the raw HTTP request and extracts the method, path, headers and body.
+ * @brief	Parses a raw HTTP request string.
+ *
+ * This function takes a raw HTTP request string and parses it into its constituent parts, including the HTTP method, path, version, headers, and body.
+ * The parsed information is stored in the Request object.
+ * It reads the request character by character, building up tokens as it goes.
+ * When it encounters a delimiter (a space, comma, semicolon, or colon), it finishes the current token and starts a new one.
+ * When it encounters a newline character, it finishes the current line and starts a new one.
+ * If the newline character is immediately followed by a carriage return character, it signifies the end of the headers and the start of the body.
+ * The body is stored as a vector of unsigned chars.
  */
 void Request::parse(std::string raw) {
 	std::istringstream iss(raw);
@@ -94,7 +102,7 @@ void Request::addHeader(std::vector<std::string> line) {
 }
 
 /**
- * @brief Parses the HTTP method from a given token and sets it to the Request object.
+ * @brief	Parses the HTTP method from a given token and sets it to the Request object.
  */
 void Request::parseMethod(std::string token) {
 	if (!token.compare("GET"))
@@ -109,7 +117,7 @@ void Request::parseMethod(std::string token) {
 }
 
 /**
- * @brief Parses the HTTP path from a given token and sets it to the Request object.
+ * @brief	Parses the HTTP path from a given token and sets it to the Request object.
  */
 void Request::parsePath(std::string token) {
 	_path = token;
@@ -117,13 +125,16 @@ void Request::parsePath(std::string token) {
 }
 
 /**
- * @brief Parses the HTTP version from a given token and sets it to the Request object.
+ * @brief	Parses the HTTP version from a given token and sets it to the Request object.
  */
 void Request::parseVersion(std::string token) {
 	_version = token;
 	// std::cout << "VERSION: " << _version << std::endl;
 }
 
+/**
+ * @brief	Returns the query string (everything after the ?) from the path.
+ */
 std::string Request::getQueryString() const {
 	std::string queryString = "";
 	std::string path = _path;
@@ -134,6 +145,9 @@ std::string Request::getQueryString() const {
 	return queryString;
 }
 
+/**
+ * @brief	Prints the headers to stdout.
+ */
 void printHeaders(std::map< std::string, std::vector<std::string> > headers) {
 	std::map< std::string, std::vector<std::string> >::iterator it;
 	for (it = headers.begin(); it != headers.end(); it++) {
@@ -145,6 +159,9 @@ void printHeaders(std::map< std::string, std::vector<std::string> > headers) {
 	}
 }
 
+/**
+ * @brief	Converts a string to lowercase.
+ */
 std::string toLowercase(std::string str) {
 	std::string res = "";
 	for (int i = 0; i < (int)str.size(); i++) {

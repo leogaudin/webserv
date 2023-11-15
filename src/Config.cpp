@@ -2,7 +2,7 @@
 #include "../include/Webserv.hpp"
 
 /**
- * @brief Gets the local IP address of the machine
+ * @brief   Gets the local IP address of the machine
  */
 std::string getLocalIPAddress() {
     struct ifaddrs *ifaddr, *ifa;
@@ -68,9 +68,6 @@ Config::~Config() {}
 /**
  * @brief   Returns a config object without any location-specific information
  * to avoid infinite recursion.
- *
- * @param    config    the raw config object
- * @return   Config    the clean config object
  */
 Config Config::toLocationConfig() {
     Config locationConfig = *(this);
@@ -78,6 +75,9 @@ Config Config::toLocationConfig() {
     return locationConfig;
 }
 
+/**
+ * @brief   Prints the config object to stdout.
+ */
 void Config::printConfig(int indent) {
     std::string indentStr = "";
     for (int i = 0; i < indent; i++) {

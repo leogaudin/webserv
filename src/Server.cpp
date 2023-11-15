@@ -1,7 +1,7 @@
 #include "../include/Webserv.hpp"
 
 /**
- * @brief Constructor for the Server class
+ * @brief   Constructor for the Server class
  *
  * @param ip_address	The IP address to listen on
  * @param port			The port to listen on
@@ -13,7 +13,7 @@ Server::Server(Config config) {
 }
 
 /**
-* @brief Closes the listening socket and exits the program
+* @brief   Closes the listening socket and exits the program
 */
 Server::~Server() {
 	close(_listeningSocket);
@@ -21,7 +21,7 @@ Server::~Server() {
 }
 
 /**
- * @brief Checks the validity of the port
+ * @brief   Checks the validity of the port.
  */
 void Server::checkInputs() {
 	// if (_config._listen < 1024)
@@ -31,7 +31,11 @@ void Server::checkInputs() {
 }
 
 /**
- * @brief Initialises the server and starts listening for connections
+ * @brief   Initialises the server and starts listening for connections.
+ *
+ * This function initialises the server and starts listening for connections.
+ * It first sets up the socket information, then creates a socket, binds it to the specified host and port, and starts listening for connections.
+ * If any of these operations fail, it calls the exitWithError function with an appropriate error message.
  */
 void Server::initAndListen() {
 	sockaddr_in socketInfo;
@@ -53,7 +57,12 @@ void Server::initAndListen() {
 }
 
 /**
- * @brief Accepts a new connection and adds it to the kqueue
+ * @brief	Accepts a new connection.
+ *
+ * If the accept operation fails, it calls the exitWithError function with an appropriate error message.
+ * Otherwise, it adds the client socket to the clients list and logs the connection.
+ *
+ * @return	int	The client socket.
  */
 int Server::acceptConnection() {
 	sockaddr_in socketInfo;
@@ -68,10 +77,11 @@ int Server::acceptConnection() {
 }
 
 /**
- * @brief Receives a message from a client socket
+ * @brief	Receives a message from a client socket.
  *
- * @param socket	The client socket to receive from
- * @return 			The received message
+ * It reads data from the socket into a buffer until no more data is available, then appends the data to a string.
+ * If the read operation fails, it logs an error, closes the connection, and breaks the loop.
+ * If the string is not empty after the loop, it creates a Request object from the string and the configuration.
  */
 void Server::receiveRequest(int socket) {
 	std::string stash = "";
@@ -94,10 +104,11 @@ void Server::receiveRequest(int socket) {
 }
 
 /**
- * @brief Sends a response to a client socket
+ * @brief	Sends a response to a client socket.
  *
- * @param str		The response to send
- * @param socket	The client socket to send to
+ * It sends data from the response string to the socket until all data has been sent.
+ * If the send operation fails, it logs an error, closes the connection, and returns.
+ * After the loop, it logs a success message.
  */
 void Server::sendResponse(std::string str, int socket) {
 	long bytesSent = 0;
