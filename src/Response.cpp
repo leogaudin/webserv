@@ -258,7 +258,7 @@ void Response::uploadFromRequest(std::string path) {
 Config Response::getLocationConfig(std::string path, Config &config) {
     std::map< std::string, Config >::iterator it;
     for (it = config._locations.begin(); it != config._locations.end(); it++) {
-        if (path.find(it->first) == 0)
+        if (path.find(it->first) == 0 && (path.size() == it->first.size() || (path[it->first.size()] && path[it->first.size()] == '/')))
         {
             it->second._locations.clear();
             return it->second;
@@ -270,7 +270,7 @@ Config Response::getLocationConfig(std::string path, Config &config) {
 std::string Response::getLocationName(std::string path, Config &config) {
     std::map< std::string, Config >::iterator it;
     for (it = config._locations.begin(); it != config._locations.end(); it++) {
-        if (path.find(it->first) == 0)
+        if (path.find(it->first) == 0 && (path.size() == it->first.size() || (path[it->first.size()] && path[it->first.size()] == '/')))
             return it->first;
     }
     return "";
