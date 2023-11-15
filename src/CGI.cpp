@@ -16,7 +16,10 @@ CGI::~CGI() {}
 
 CGI &CGI::operator=(const CGI &other) {
     if (this != &other) {
+		this->_config = other._config;
+		this->_request = other._request;
         this->_env = other._env;
+		this->_args = other._args;
     }
     return (*this);
 }
@@ -99,6 +102,7 @@ std::string CGI::execute() {
 		close(fd[1]);
 		alarm(5);
 		execve(args[0], args, envArray);
+		delete envArray;
 		exit(0);
 	}
 	else {
@@ -115,6 +119,6 @@ std::string CGI::execute() {
         if (WIFEXITED(status))
             return (delete envArray, result);
         else
-			return ("HTTP/1.1 500 Internal Server Error\r\n\r\nError: Script execution terminated unexpectedly.");
+			return (delete envArray, "HTTP/1.1 500 Internal Server Error\r\n\r\nError: Script execution terminated unexpectedly.");
 	}
 }

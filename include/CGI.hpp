@@ -11,12 +11,8 @@ class CGI
 		CGI &operator=(const CGI &other);
 		~CGI();
 
-		void setEnv(std::map<std::string, std::string> env) { _env = env; }
-		void setArgs(const std::string &args) { _args = args; }
-		void setBody(const std::string &body) { _body = body; }
 		std::map<std::string, std::string> getEnv() const { return (_env); }
 		std::string getArgs() const { return (_args); }
-		std::string getBody() const { return (_body); }
 		std::string execute();
 
 	private:
@@ -24,7 +20,6 @@ class CGI
 		Request _request;
 		std::map<std::string, std::string> _env;
 		std::string _args;
-		std::string _body;
 
 		void initEnv();
 		void printEnv();
