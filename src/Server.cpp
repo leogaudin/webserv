@@ -24,10 +24,10 @@ Server::~Server() {
  * @brief Checks the validity of the port
  */
 void Server::checkInputs() {
-	if (_config._listen < 1024)
-		exitWithError("Port numbers 0 - 1023 are used for common ports");
-	if (_config._listen > 49151)
-		exitWithError("Port numbers 49152 - 65535 are reserved for clients");
+	// if (_config._listen < 1024)
+	// 	exitWithError("Port numbers 0 - 1023 are used for common ports");
+	// if (_config._listen > 49151)
+	// 	exitWithError("Port numbers 49152 - 65535 are reserved for clients");
 }
 
 /**
@@ -81,7 +81,7 @@ void Server::receiveRequest(int socket) {
 		bytesReceived = recv(socket, buffer, BUFFER_SIZE, 0);
 		if (bytesReceived < 0) {
 			logError("Failed to read request from client");
-			close(socket);
+			closeConnection(socket);
 			break;
 		}
 		stash.append(buffer, bytesReceived);
@@ -109,7 +109,7 @@ void Server::sendResponse(std::string str, int socket) {
 		bytesSent = send(socket, buffer + totalBytesSent, bytesToSend - totalBytesSent, 0);
 		if (bytesSent == -1) {
 			logError("Error sending response to client: " + std::string(strerror(errno)));
-			close(socket);
+			closeConnection(socket);
 			return;
 		}
 		totalBytesSent += bytesSent;
