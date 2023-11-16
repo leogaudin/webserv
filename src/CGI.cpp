@@ -96,7 +96,7 @@ std::string getExtension(std::string path) {
 }
 
 /**
- * @brief   Executes a CGI script and returns its output.
+ * @brief Executes a CGI script and returns its output.
  *
  * This function executes a CGI script specified in the request path.
  * It constructs the full path of the script, converts the environment variables from a map to an array, and forks a new process to execute the script.
