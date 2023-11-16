@@ -80,8 +80,8 @@ void ServerManager::runAllServers() {
 			else if (evList[i].filter == EVFILT_WRITE) {
 				Response response = Response(server->_request, server->_config);
 				server->sendResponse(response.build(), eventSocket);
-				updateEvent(kq, eventSocket, EVFILT_READ, EV_ENABLE, 0, 0, NULL);
-				updateEvent(kq, eventSocket, EVFILT_WRITE, EV_DISABLE, 0, 0, NULL);
+				updateEvent(kq, eventSocket, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+				updateEvent(kq, eventSocket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 				server->closeConnection(eventSocket);
 			}
 		}
