@@ -150,8 +150,6 @@ void Response::handleGet(std::string requestedPath) {
 		}
 		else if (path[strlen(path) - 1] != '/')
             redirect(requestedPath + "/");
-        else
-		    handleErrorStatus(404);
 	}
 	else
 		handleErrorStatus(404);
@@ -226,8 +224,6 @@ void Response::handleDelete(std::string requestedPath) {
         }
         else if (s.st_mode & S_IFDIR)
             handleErrorStatus(405);
-        else
-            handleErrorStatus(404);
     }
     else
         handleErrorStatus(404);

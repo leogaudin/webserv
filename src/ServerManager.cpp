@@ -55,7 +55,8 @@ void ServerManager::runAllServers() {
 		int newEvents = kevent(kq, NULL, 0, evList, MAX_EVENTS, NULL);
 		if (newEvents <= 0)
 			continue;
-		for (int i = 0; i < newEvents; i++) {
+		// for (int i = 0; i < newEvents; i++) {
+			int i = 0;
 			int eventSocket = evList[i].ident;
 			Server* server = findServerBySocket(eventSocket);
 
@@ -84,7 +85,7 @@ void ServerManager::runAllServers() {
 				updateEvent(kq, eventSocket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
 				server->closeConnection(eventSocket);
 			}
-		}
+		// }
 	}
 }
 

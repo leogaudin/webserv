@@ -37,10 +37,9 @@ enum	Method
 # include "Server.hpp"
 # include "ServerManager.hpp"
 
-# define CRLF "\r\n"
 # define MAX_CONNECTIONS 255
 # define BUFFER_SIZE 20
-# define MAX_EVENTS 16
+# define MAX_EVENTS 1
 # define CRLF "\r\n"
 # define LOOPBACK "127.0.0.1"
 
