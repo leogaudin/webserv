@@ -31,6 +31,28 @@ void Server::checkInputs() {
 }
 
 /**
+ * @brief   Gets the local IP address of the machine
+ */
+std::string getLocalIPAddress() {
+    struct ifaddrs *ifaddr, *ifa;
+    char ip[INET_ADDRSTRLEN];
+
+    if (getifaddrs(&ifaddr) == -1)
+        exitWithError("Error getting network interface information.");
+
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr != nullptr && ifa->ifa_addr->sa_family == AF_INET) {
+            struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in*>(ifa->ifa_addr);
+            inet_ntop(AF_INET, &(addr->sin_addr), ip, sizeof(ip));
+			if (!strcmp(ip, LOOPBACK)) continue;
+			break;
+        }
+    }
+;
+    return (freeifaddrs(ifaddr), ip);
+}
+
+/**
  * @brief   Initialises the server and starts listening for connections.
  *
  * This function initialises the server and starts listening for connections.
@@ -53,7 +75,11 @@ void Server::initAndListen() {
 		exitWithError("Error binding socket: " + std::string(strerror(errno)));
 	if (listen(_listeningSocket, MAX_CONNECTIONS) < 0)
 		exitWithError("Socket listening failed: " + std::string(strerror(errno)));
-	logSuccess("Listening on http://" + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)));
+	if (std::string(inet_ntoa(socketInfo.sin_addr)).compare("0.0.0.0") == 0) {
+		logSuccess("Listening on http://" LOOPBACK ":" + std::to_string(ntohs(socketInfo.sin_port)) + " and http://" + getLocalIPAddress() + ":" + std::to_string(ntohs(socketInfo.sin_port)));
+	}
+	else
+		logSuccess("Listening on http://" + std::string(inet_ntoa(socketInfo.sin_addr)) + ":" + std::to_string(ntohs(socketInfo.sin_port)));
 }
 
 /**

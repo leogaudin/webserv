@@ -73,7 +73,7 @@ void Response::resolveMethod() {
         }
     }
 
-    if (_request.getHeaders()["host"][0] != _config._serverName && _request.getHeaders()["host"][0] != _config._host) {
+    if (_config._serverName.compare("") && _request.getHeaders()["host"][0] != _config._serverName && _request.getHeaders()["host"][0] != _config._host) {
         handleErrorStatus(400);
         return;
     }

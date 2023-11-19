@@ -1,31 +1,9 @@
 
 #include "../include/Webserv.hpp"
 
-/**
- * @brief   Gets the local IP address of the machine
- */
-std::string getLocalIPAddress() {
-    struct ifaddrs *ifaddr, *ifa;
-    char ip[INET_ADDRSTRLEN];
-
-    if (getifaddrs(&ifaddr) == -1)
-        exitWithError("Error getting network interface information.");
-
-    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr != nullptr && ifa->ifa_addr->sa_family == AF_INET) {
-            struct sockaddr_in *addr = reinterpret_cast<struct sockaddr_in*>(ifa->ifa_addr);
-            inet_ntop(AF_INET, &(addr->sin_addr), ip, sizeof(ip));
-			if (!strcmp(ip, LOOPBACK)) continue;
-			break;
-        }
-    }
-;
-    return (freeifaddrs(ifaddr), ip);
-}
-
 Config::Config() {
     _serverName = "";
-    _host = getLocalIPAddress();
+    _host = "0.0.0.0";
     _listen = 8080;
     _root = "";
     _index = "index.html";
