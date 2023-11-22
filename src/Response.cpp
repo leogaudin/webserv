@@ -73,7 +73,10 @@ void Response::resolveMethod() {
         }
     }
 
-    if (_config._serverName.compare("") && _request.getHeaders()["host"][0] != _config._serverName && _request.getHeaders()["host"][0] != _config._host) {
+    if (_config._serverName.compare("") && _config._host.compare("0.0.0.0") && _request.getHeaders()["host"][0] != _config._serverName && _request.getHeaders()["host"][0] != _config._host) {
+        std::cout << "Server name: " << _config._serverName << std::endl;
+        std::cout << "Host: " << _request.getHeaders()["host"][0] << std::endl;
+
         handleErrorStatus(400);
         return;
     }
