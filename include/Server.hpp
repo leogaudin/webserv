@@ -31,4 +31,6 @@ class Server
 	void initAndListen();
 };
 
+std::string getLocalIPAddress();
+
 #endif
