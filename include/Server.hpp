@@ -22,13 +22,14 @@ class Server
 	void addClientSocket(int socket);
 	void closeConnection(int socket);
 	void printClients();
+    void initAndListen();
 
   private:
 	int _listeningSocket;
 	std::vector<int> _clientSockets;
 
 	void checkInputs();
-	void initAndListen();
+
 };
 
 std::string getLocalIPAddress();

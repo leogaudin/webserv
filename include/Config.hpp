@@ -11,11 +11,11 @@ class Config
 	Config(const Config &other);
 	Config &operator=(const Config &other);
 	~Config();
-	void printConfig(int indent = 0);
+	void printConfig(int indent = 0, bool printLocs = true);
 	Config toLocationConfig();
-	// void parseConfig(std::string filename);
 
 	// General
+    bool _parsed;
 	int _listen;
 	std::string _host;
 	std::string _serverName;

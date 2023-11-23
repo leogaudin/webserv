@@ -8,8 +8,7 @@
  */
 Server::Server(Config config) {
 	_config = config;
-	checkInputs();
-	initAndListen();
+    checkInputs();
 }
 
 /**

@@ -42,9 +42,11 @@ enum	Method
 # define MAX_EVENTS 1
 # define CRLF "\r\n"
 # define LOOPBACK "127.0.0.1"
+# define MAX_SERVERS 3
 
 void		printHeaders(std::map< std::string, std::vector<std::string> > headers);
 std::string toLowercase(std::string str);
 void		exitWithError(const std::string &errorMessage);
+Config*     parseConfig(std::string filename);
 
 #endif

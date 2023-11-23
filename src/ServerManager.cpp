@@ -3,7 +3,9 @@
 
 ServerManager::ServerManager() {}
 
-ServerManager::~ServerManager() {}
+ServerManager::~ServerManager() {
+    _servers.clear();
+}
 
 /**
  * @brief	Adds a server to the end of the _servers vector.
@@ -47,8 +49,10 @@ void ServerManager::runAllServers() {
 	if (kq == -1)
 		exitWithError("Failed to create kqueue");
 
+
 	for (std::vector<Server*>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
-		updateEvent(kq, (*it)->getListeningSocket(), EVFILT_READ, EV_ADD, 0, 0, NULL);
+        (*it)->initAndListen();
+        updateEvent(kq, (*it)->getListeningSocket(), EVFILT_READ, EV_ADD, 0, 0, NULL);
 	}
 
 	while (true) {
